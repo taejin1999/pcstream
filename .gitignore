@@ -1,0 +1,10 @@
+# compiled source #
+*.aux
+*.aux~
+*.dvi
+*.ps
+*.log
+*.tex~
+*.pdf
+
+
