@@ -11,7 +11,7 @@
 # make pdf      # make pdf
 #
 
-MAIN		= main 
+MAIN		= main
 
 all: dvi ps pdf
 #all: dvi ps
