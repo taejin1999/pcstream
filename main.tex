@@ -1,9 +1,8 @@
 %\documentclass[onecolumn, 10pt]{IEEEtran}
 %\linespread{2.4}
-
 \documentclass[letterpaper, twocolumn, 10pt]{article}
-
 \usepackage{usenix}
+
 \usepackage{multirow}
 \usepackage{comment}
 \usepackage{epsfig}
@@ -23,14 +22,26 @@
 \begin{document}
 
 \title{
-PCStream
-%Improving Lifetime of SSD-based RAIDs using Dedup-assisted Partial Stripe Writes
+\bf PCStream: Automatic Stream Allocation Using a Program Context-based Data Separator
 }
 
 %\numberofauthors{1}
 
 \author{
-Taejin Kim
+{\rm Taejin Kim}\\
+Seoul National University
+\and 
+{\rm Sungjin Lee}\\
+DGIST
+\and 
+{\rm Sangwook Shane Hahn}\\
+Seoul National University
+\and 
+{\rm Joo-Young Hwang(?)} \\
+Samsung Electronics
+\and 
+{\rm Jihong Kim} \\
+Seoul National University
 }
 
 \maketitle
@@ -44,6 +55,7 @@ TBD
 \input{motivation}
 \input{pcstream}
 \input{experiment}
+\input{discussion}
 \input{conclusion}
 \input{reference}
 \end{document}
