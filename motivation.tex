@@ -5,28 +5,41 @@ is modified to manually assign streams.
 Since an application knows the lifetime of the data best, this approach
 is very effective in reducing WAF.
 However, in order to properly specify streams in the application, the programmer must
-fully understand the lifetime characteristics of data.
+fully understand the lifetime characteristics of the data.
 Also when multiple applications try to assign streams, a centralized stream assignment
 is required to avoid conflicts.
 Second, FStream~\cite{FStream} separates short-lived data, e.g., file system metadata and
 journal, using the file system information. 
 FStream does not require a burden on the programmer, but the system developer is still burdened
 to identify short-lived data of the application, e.g., log data of key-value store, based on the file extension.
-Lastly, unlike other scheme, AutoStream~\cite{AutoStream} is aimed to automate the process of mapping 
+In addition, those manual techniques are unable to adapt the stream mapping when the workload or application changes.
+These limitations of the manual approach can be overcome by the automatic approach.
+Lastly, unlike other schemes, AutoStream~\cite{AutoStream} is aimed to automate the process of mapping 
 write I/O operations to an SSD stream.
-Since AutoStream relies on the past LBA access patterns, it is not practical when the data are written in
+However, since AutoStream relies on the past LBA access patterns, it is not practical when the data are written in
 append-only manner, as modern key-value store.
 
-We analyzed RocksDB~\cite{RocksDB}, one of the popular key-value store, 
-
-\begin{figure}[!t]
+\begin{figure}[!b]
+	\vspace{-25pt}
 	\centering
 	\includegraphics[width=0.9\linewidth]{figure/chunklifetime} % data from 1/02271857 - 59 chunk 
+	\vspace{-10pt}
 	\caption{The various lifetime of data of append-only workload with in a chunk}
 	\label{fig:chunklifetime}
 \end{figure}
 
-Summarizing existing studies, if we adopt automated stream management to the append-only workload,
-we lose the lifetime information of the application. 
+In order to see how AutoStream work under the append-only workload,
+we analyzed the write pattern of RocksDB~\cite{RocksDB}, one of the popular key-value store.
+Figure~\ref{fig:chunklifetime} shows the lifetime of the data written to the 1MB-sized logical area.
+The x-axis represents the logical time when the data is written and invalidated, and y-axis
+represents the logical page number where the data is written to.
+As shown in the Figure~\ref{fig:chunklifetime}, the data written to this area had various lifetimes.
+The address-based approach can not properly distinguishes the lifetime of the data written by
+the append-only workload.
 
+To sum up, for multi-streamed SSDs under the append-only workload, we need to choose either
+the manual approach with accurate lifetime information and many restrictions
+or the automated approach with no restrictions and the inaccurate lifetime expectation.
+In this paper, we propose PCStream, which is an automatic stream allocation technique with
+more accurate lifetime expectation by obtaining the context informataion of an application.
 
