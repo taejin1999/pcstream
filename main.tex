@@ -1,7 +1,7 @@
-%\documentclass[onecolumn, 10pt]{IEEEtran}
-%\linespread{2.4}
-\documentclass[letterpaper, twocolumn, 10pt]{article}
-\usepackage{usenix}
+\documentclass[letterpaper, onecolumn, 10pt]{article}
+\linespread{2.4}
+%\documentclass[letterpaper, twocolumn, 10pt]{article}
+%\usepackage{usenix}
 
 \usepackage{multirow}
 \usepackage{comment}
@@ -49,7 +49,35 @@ Seoul National University
 \thispagestyle{empty}
 
 \subsection*{Abstract}
-TBD
+Multi-streamed SSDs provide a special mechanism, called streams,
+for a host system to prevent data with different lifetimes from being
+mixed into the same block. 
+Streams, when properly used, can
+improve both the performance and lifetime of flash-based SSDs by
+reducing the garbage collection overhead. 
+Existing stream
+management techniques, however, are limited to be used in
+practice. 
+All known techniques (except one) require manual data-to-stream 
+mapping while the automatic technique does not work with
+modern append-only workloads. 
+In this paper, we propose
+PCStream, a fully automatic stream management technique, which
+works with append-only workloads as well as update workloads.
+PCStream automates the data-to-stream mapping by exploiting an
+observation that writes/updates from the same program context
+tend to show the same lifetime. 
+PCStream allocates a different
+stream for each program context which are automatically identified
+during the run time. 
+Furthermore, when data mapped to the same
+stream show large differences in their lifetimes, PCStream
+dynamically refines the stream allocation during garbage collection.
+Our experimental results show that PCStream can reduce the
+garbage collection overhead as much as manual stream
+management techniques while no code modification is necessary.
+For a RocksDB benchmark, PCStream improved 66\% over 
+exisiting automatic stream management technique.
 
 \input{introduction}
 \input{motivation}
