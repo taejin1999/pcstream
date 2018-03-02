@@ -11,8 +11,22 @@ is required to avoid conflicts.
 Second, FStream~\cite{FStream} separates short-lived data, e.g., file system metadata and
 journal, using the file system information. 
 FStream does not require a burden on the programmer, but the system developer is still burdened
-to identify short-lived data of the application, e.g., log data of NoSQL DB, based on the file extension.
+to identify short-lived data of the application, e.g., log data of key-value store, based on the file extension.
 Lastly, unlike other scheme, AutoStream~\cite{AutoStream} is aimed to automate the process of mapping 
-write I/O operations to an SSD stream with no application changes.
-Since AutoStream relies on the past LBA access patterns, 
+write I/O operations to an SSD stream.
+Since AutoStream relies on the past LBA access patterns, it is not practical when the data are written in
+append-only manner, as modern key-value store.
+
+We analyzed RocksDB~\cite{RocksDB}, one of the popular key-value store, 
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=0.9\linewidth]{figure/chunklifetime} % data from 1/02271857 - 59 chunk 
+	\caption{The various lifetime of data of append-only workload with in a chunk}
+	\label{fig:chunklifetime}
+\end{figure}
+
+Summarizing existing studies, if we adopt automated stream management to the append-only workload,
+we lose the lifetime information of the application. 
+
 

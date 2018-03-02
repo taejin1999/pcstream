@@ -11,24 +11,10 @@
 # make pdf      # make pdf
 #
 
-MAIN		= main
+MAIN = main
 
-all: dvi ps pdf
-#all: dvi ps
-
-pdf: ${MAIN}.pdf
-ps: ${MAIN}.ps
-dvi: ${MAIN}.dvi
-
-${MAIN}.pdf: ${MAIN}.ps
-	ps2pdf14 -dPDFSETTINGS=/prepress -dEmbedAllFonts=true ${MAIN}*.ps &
-
-${MAIN}.ps: ${MAIN}.dvi
-#dvips -Ppdf -Pcmz -Pamz -t letter -D 600 -G0 -o ${MAIN}.ps ${MAIN}.dvi
-	dvips -Ppdf -t letter -D 600 -G0 -o ${MAIN}.ps ${MAIN}.dvi
-
-${MAIN}.dvi : ${MAIN}.tex
-	latex --interaction=nonstopmode ${MAIN}.tex
+all:
+	pdflatex ${MAIN}.tex
 
 clean:
 	rm -f ./*.aux~
