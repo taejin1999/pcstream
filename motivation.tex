@@ -20,20 +20,21 @@ However, since AutoStream relies on the past LBA access patterns, it is not prac
 append-only manner, as modern key-value store.
 
 \begin{figure}[!b]
-	\vspace{-25pt}
+	\vspace{-15pt}
 	\centering
-	\includegraphics[width=0.9\linewidth]{figure/chunklifetime} % data from 1/02271857 - 59 chunk 
+	\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
 	\vspace{-10pt}
-	\caption{The various lifetime of data of append-only workload with in a chunk}
-	\label{fig:chunklifetime}
+	\caption{The lifetime distribution according to the LBA.}
+	\label{fig:lba_lifetime}
 \end{figure}
 
-In order to see how AutoStream work under the append-only workload,
+In order to see the relationship between the address and the lifetime of data of the append-only workload,
 we analyzed the write pattern of RocksDB~\cite{RocksDB}, one of the popular key-value store.
-Figure~\ref{fig:chunklifetime} shows the lifetime of the data written to the 1MB-sized logical area.
-The x-axis represents the logical time when the data is written and invalidated, and y-axis
-represents the logical page number where the data is written to.
-As shown in the Figure~\ref{fig:chunklifetime}, the data written to this area had various lifetimes.
+Figure~\ref{fig:lba_lifetime} shows the lifetime of the data written to the entire logical address space.
+The x-axis represents the logical block address and 
+and y-axis represents the lifetime of data.
+As shown in the Figure~\ref{fig:lba_lifetime}, all the data have very different lifetimes regardless of their 
+address.
 It means that the address is not enough to properly distinguish the lifetime of data.
 For the automatic stream allocation, thus, more information of the application layer is required.
 
