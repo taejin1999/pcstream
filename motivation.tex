@@ -34,12 +34,14 @@ Figure~\ref{fig:chunklifetime} shows the lifetime of the data written to the 1MB
 The x-axis represents the logical time when the data is written and invalidated, and y-axis
 represents the logical page number where the data is written to.
 As shown in the Figure~\ref{fig:chunklifetime}, the data written to this area had various lifetimes.
-The address-based approach can not properly distinguishes the lifetime of the data written by
-the append-only workload.
+It means that the address is not enough to properly distinguish the lifetime of data.
+For the automatic stream allocation, thus, more information of the application layer is required.
 
-To sum up, for multi-streamed SSDs under the append-only workload, we need to choose either
-the manual approach with accurate lifetime information and many restrictions
-or the automated approach with no restrictions and the inaccurate lifetime expectation.
+%The address-based approach can not properly distinguishes the lifetime of the data written by
+%the append-only workload.
+
+To sum up, although the application knows the lifetime of the written data, it is hard to 
+deliver the information to the system layer without modification.
 In this paper, we propose PCStream, which is an automatic stream allocation technique with
-more accurate lifetime expectation by obtaining the context informataion of an application.
+more accurate lifetime prediction by obtaining the context informataion of an application.
 
