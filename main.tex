@@ -17,13 +17,12 @@
 \usepackage{cases}
 \usepackage{graphicx}
 %\usepackage{float}
-%\usepackage{caption}
+\usepackage{caption}
 
 \begin{document}
 
 \title{
-\bf PCStream: Automatic Stream Allocation Using a Program Context-based Data Separator
-}
+\bf PCStream: Automatic Stream Allocation Using Program Contexts}
 
 %\numberofauthors{1}
 
@@ -31,13 +30,13 @@
 {\rm Taejin Kim}\\
 Seoul National University
 \and 
-{\rm Sungjin Lee}\\
-DGIST
-\and 
 {\rm Sangwook Shane Hahn}\\
 Seoul National University
 \and 
-{\rm Joo-Young Hwang(?)} \\
+{\rm Sungjin Lee}\\
+DGIST
+\and 
+{\rm Joo-Young Hwang} \\
 Samsung Electronics
 \and 
 {\rm Jihong Kim} \\
@@ -49,35 +48,21 @@ Seoul National University
 \thispagestyle{empty}
 
 \subsection*{Abstract}
-Multi-streamed SSDs provide a special mechanism, called streams,
-for a host system to prevent data with different lifetimes from being
-mixed into the same block. 
-Streams, when properly used, can
-improve both the performance and lifetime of flash-based SSDs by
-reducing the garbage collection overhead. 
-Existing stream
-management techniques, however, are limited to be used in
-practice. 
-All known techniques (except one) require manual data-to-stream 
-mapping while the automatic technique does not work with
-modern append-only workloads. 
-In this paper, we propose
-PCStream, a fully automatic stream management technique, which
-works with append-only workloads as well as update workloads.
-PCStream automates the data-to-stream mapping by exploiting an
-observation that writes/updates from the same program context
-tend to show the same lifetime. 
-PCStream allocates a different
-stream for each program context which are automatically identified
-during the run time. 
-Furthermore, when data mapped to the same
-stream show large differences in their lifetimes, PCStream
-dynamically refines the stream allocation during garbage collection.
-Our experimental results show that PCStream can reduce the
+We propose a fully automatic stream management technique, called {\sf PCStream}, 
+for multi-streamed SSDs.
+{\sf PCStream} is based on our observation that data lifetimes can be reliably predicted using
+write program contexts.  
+By extracting program contexts during the run time,  
+{\sf PCStream}  automates the data-to-stream mapping mapping.  
+When data mapped to the same
+stream show large differences in their lifetimes, {\sf PCStream}
+dynamically splits the current stream into multiple substreams
+with more uniform data lifetimes during garbage collection.
+Our experimental results show that {\sf PCStream} can reduce the
 garbage collection overhead as much as manual stream
 management techniques while no code modification is necessary.
-For a RocksDB benchmark, PCStream improved 66\% over 
-exisiting automatic stream management technique.
+For a RocksDB benchmark, {\sf PCStream} improved WAF by 40\% over 
+the exisiting automatic technique.
 
 \input{introduction}
 \input{motivation}

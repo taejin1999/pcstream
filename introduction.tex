@@ -1,4 +1,108 @@
 \section{Introduction}
-TBD
+Multi-streamed SSDs provide a special mechanism,
+called streams, for a host system to prevent data with different lifetimes 
+from being mixed into the same block~\cite{MultiStream}.
+Streams, when properly used, can improve both the performance and lifetime of flash-based SSDs by reducing
+the garbage collection overhead.  
 
+In order to take a full advantage of
+streams, data with similar lifetimes should be allocated to the same stream.
+However, since it is difficult to know the data lifetime {\it a priori} when they are written,
+allocating a stream to data is a challenging engineering problem, often requiring a significant effort from
+programmers. An ideal stream allocator {\sf IdealStream} needs to
+meet at least three requirements.  
+First, {\sf IdealStream} must allocate streams based on the data lifetime.  
+When two data have different lifetimes, they should not allocated to the same stream.   
+Second, {\sf IdealStream} should be fully automatic without requiring manual work from
+programmers.   
+Third, {\sf IdealStream} should be able to change the data-to-stream mapping during the run time, 
+reflecting varying data lifetimes.
+
+\begin{table}[b]
+	\vspace{-15pt}
+	\centering
+	\caption{Limitations of existing studies}
+	\vspace{-5pt}
+	\begin{tabular}{c|ccc}\hline
+		\renewcommand{\arraystretch}{0.5}
+		& lifetime- & \multirow{2}{*} {automatic} & \multirow{2}{*} {adaptable} \\
+		 & based     &                           &                           \\ \hline\hline
+		\renewcommand{\arraystretch}{0.5}
+		Multi- &\multirow{2}{*}  o & \multirow{2}{*} x & \multirow{2}{*} x \\
+		Streaming &                &                   &                   \\\hline
+		\renewcommand{\arraystretch}{3}
+		FStream & o & x & x \\ \hline
+		\renewcommand{\arraystretch}{3}
+		AutoStream & x & o & o \\ \hline
+	\end{tabular}
+\end{table}
+
+None of existing stream management techniques, however, do not meet three requirements.  
+Table 1 summarizes how representative stream allocation
+techniques~\cite{MultiStream,FStream,AutoStream} meet the requirement.   
+Except for AutoStream~\cite{AutoStream}, multi-streaming and FStream are manual techniques 
+which need to modify the application or analyze the file extension.
+Although AutoStream allocates streams in an automatic fashion at the device driver level, 
+it is based on a very strong assumption that data written to the same logical block 
+address (LBA) have similar lifetimes.   
+As shown in~\cite{PCHa}, this assumption can be valid for conventional update workloads 
+(where the same LBA is used to update old data), but it is not true for
+recent {\it append-only} workloads such as RocksDB~\cite{RocksDB} or Cassandra.  
+As will be shown in Section 2, in RocksDB, a chunk of data written to a fixed 
+LBA range have widely varying data lifetimes over times.  
+
+In this paper, we propose a new stream management technique, PCStream, which meets all three requirements.   
+The key insight behind PCStream is that
+data lifetimes should be monitored at a higher abstraction level than the LBA level.   
+From our earlier work~\cite{PCHa} on the data separation problem, we
+adopted program contexts as the best abstraction level~\cite{PC}. 
+Since a program context represents a particular execution path of a program, 
+when data lifetimes are observed at the same program context, 
+they tend to be similar~\cite{PCHa}. 
+For example, in the context of managing the RocksDB log file, 
+log data are created when key-value is put into memory, 
+and deleted if the key-value is flushed to storage~\cite{RocksDB}.
+In a typical workload, log data has a similar lifetime because the key-value resides in memory at a similar time.
+
+By identifying program contexts during the run time, 
+PCStream can directly map a program context to a stream.   
+While PCStream works efficiently for most workloads, the lifetime of data written from
+a single program context can be quite fluctuating, thus making a pure PC-based approach less effective.   
+In PCStream, we modify stream allocations when such PC is observed. 
+The main drawback of the mixed lifetimes is that 
+long-lived data remains as a valid page, worsening garbage collection efficiency.
+In order to separate the long-lived data from the others,
+we assign a sub-stream for the PC to prevent the repetitive page copies of GC in the original stream.
+
+In order to evaluate the effectiveness of PCStream, 
+we implemented the PC calculation and the stream mapping in the linux kernel to
+effectively identify data lifetime without manual tasks.
+Our experimental results show that, for RocksDB workload, PCStream can improve 
+the GC efficiency up to 66\% over the baseline stream mapping policy 
+
+The rest of this paper is organized as follows. First, we describe the motivations of our study in Section 2.
+Section 3 describes the details of PCStream schemes. The experimental results are shown in Section 4. 
+Finally, several factors for desining PCStream are discussed in Section 5 and Section 6 gives conclusions.
+
+\begin{comment}
+...
+Recent studies have used two strategies to utilize the stream feature.
+One is to classify the application data into different streams based on an understanding
+of the expected lifetime of those data~\cite{MultiStream},~\cite{FStream}. 
+This manual stream assignment requires the programmer or system manager to 
+fully understand the lifetime characteristics of the data, such as different levels
+of a log-structured merge tree or the file extension of commitlog file.
+Also when multiple applications try to assign streams, a centralized stream assignment
+is required to avoid conflicts.
+The other is to automate the process of mapping write I/O operations to an SSD stream~\cite{AutoStream}.
+However, since AutoStream relies on the past LBA access patterns, 
+it is not practical when the data are written in append-only manner, e.g. RocksDB or Cassandra.
+
+Usually, the lifetime of data is determined by its purpose.
+For example, files such as the write ahead log in RocksDB are quickly deleted, 
+while write-once data is kept at the bottom level of the LSM-tree for a long time.
+Our approach is motivated by the observation that the purpose of the application can be defined as
+the execution path of function calls that lead to a write system call, called program context.
+In this paper, we take the program context information as a lifetime hint for the automatic stream allocation. 
+\end{comment}
 
