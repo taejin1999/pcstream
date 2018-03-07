@@ -2,21 +2,45 @@
 Multi-streamed SSDs provide a special mechanism,
 called streams, for a host system to prevent data with different lifetimes 
 from being mixed into the same block~\cite{MultiStream}.
-Streams, when properly used, can improve both the performance and lifetime of flash-based SSDs by reducing
-the garbage collection overhead.  
+Streams, when properly used, can significantly improve both the performance and lifetime of flash-based SSDs by reducing
+the garbage collection overhead~\cite{MultiStream, FStream, AutoStream, Level}.  
+In order to achieve high performance on multi-streamed SSDs, data with similar 
+future update times~\cite{PCHa}
+should be allocated to the same stream.
+However, since it is difficult to know the future update times {\it a priori} when they are written,
+many existing techniques make stream allocation decisions both {\it statically} and {\it manually} by relying on 
+programmers' understanding on I/O characteristics of applications/file systems~\cite{MultiStream,FStream}.  
+Our long-term goal is to develop a new stream allocation technique, 
+which completely automates the task of stream allocation without any direct involvement from programmers.
 
-In order to take a full advantage of
-streams, data with similar lifetimes should be allocated to the same stream.
-However, since it is difficult to know the data lifetime {\it a priori} when they are written,
-allocating a stream to data is a challenging engineering problem, often requiring a significant effort from
-programmers. An ideal stream allocator {\sf IdealStream} needs to
+In order to evaluate the existing stream allocation techniques, 
+we view that at least three following  requirements should be satisfied 
+by an ideal stream allocator {\sf IdealStream}.   
+An ideal stream allocator {\sf IdealStream} needs to
 meet at least three requirements.  
-First, {\sf IdealStream} must allocate streams based on the data lifetime.  
-When two data have different lifetimes, they should not allocated to the same stream.   
-Second, {\sf IdealStream} should be fully automatic without requiring manual work from
+First, {\sf IdealStream} should be fully automatic without requiring manual work from
 programmers.   
+Second, {\sf IdealStream} must allocate streams based on the data lifetime.  
+When two data have different lifetimes, they should not be allocated to the same stream.   
 Third, {\sf IdealStream} should be able to change the data-to-stream mapping during the run time, 
 reflecting varying data lifetimes.
+As summarized in Table 1, however, none of existing stream management 
+techniques~\cite{MultiStream,FStream,AutoStream} meets three requirements.  
+Except for AutoStream~\cite{AutoStream}, 
+both FStream~\cite{FStream} and ManualStream~\cite{MultiStream}
+\footnote{For a description purpose, we call the technique 
+used in~\cite{MultiStream} by ManualStream.}
+are manual techniques 
+which need to modify 
+file system or applications.
+Although AutoStream automatically allocates streams at the device driver level, 
+its stream allocation policy does not work with modern append-only workloads such as RocksDB or Cassandra.  
+Unlike conventional update workloads where data written to the same logical block address (LBA) 
+shows a strong update locality, 
+the recent append-only workload completely decouples the data lifetimes from LBAs.  
+For example, as will be shown in Section 2, in RocksDB, 
+a chunk of data written to a fixed 
+LBA range have widely varying data lifetimes over times.  
 
 \begin{table}[b]
 	\vspace{-15pt}
@@ -37,52 +61,41 @@ reflecting varying data lifetimes.
 	\end{tabular}
 \end{table}
 
-None of existing stream management techniques, however, do not meet three requirements.  
-Table 1 summarizes how representative stream allocation
-techniques~\cite{MultiStream,FStream,AutoStream} meet the requirement.   
-Except for AutoStream~\cite{AutoStream}, multi-streaming and FStream are manual techniques 
-which need to modify the application or analyze the file extension.
-Although AutoStream allocates streams in an automatic fashion at the device driver level, 
-it is based on a very strong assumption that data written to the same logical block 
-address (LBA) have similar lifetimes.   
-As shown in~\cite{PCHa}, this assumption can be valid for conventional update workloads 
-(where the same LBA is used to update old data), but it is not true for
-recent {\it append-only} workloads such as RocksDB~\cite{RocksDB} or Cassandra.  
-As will be shown in Section 2, in RocksDB, a chunk of data written to a fixed 
-LBA range have widely varying data lifetimes over times.  
-
-In this paper, we propose a new stream management technique, PCStream, which meets all three requirements.   
-The key insight behind PCStream is that
+In this paper, we propose a new stream management technique, called {\sf PCStream}, 
+which meets all three requirements.   
+The key insight behind {\sf PCStream} is that
 data lifetimes should be monitored at a higher abstraction level than the LBA level.   
-From our earlier work~\cite{PCHa} on the data separation problem, we
-adopted program contexts as the best abstraction level~\cite{PC}. 
 Since a program context represents a particular execution path of a program, 
 when data lifetimes are observed at the same program context, 
 they tend to be similar~\cite{PCHa}. 
 For example, in the context of managing the RocksDB log file, 
-log data are created when key-value is put into memory, 
-and deleted if the key-value is flushed to storage~\cite{RocksDB}.
-In a typical workload, log data has a similar lifetime because the key-value resides in memory at a similar time.
+log data are written when key-value pairs are temporarily stored in the memory, 
+and log data are deleted if the key-value pairs are flushed to storage~\cite{RocksDB}.
+In a typical workload, log data has a similar lifetime because the key-value pairs 
+reside in the memory at a similar time.
 
 By identifying program contexts during the run time, 
-PCStream can directly map a program context to a stream.   
-While PCStream works efficiently for most workloads, the lifetime of data written from
+{\sf PCStream} can directly map a program context to a stream.   
+While {\sf PCStream} works efficiently for most workloads, the lifetime of data written from
 a single program context can be quite fluctuating, thus making a pure PC-based approach less effective.   
-In PCStream, we modify stream allocations when such PC is observed. 
+In {\sf PCStream}, we modify stream allocations when such PC is observed. 
 The main drawback of the mixed lifetimes is that 
 long-lived data remains as a valid page, worsening garbage collection efficiency.
 In order to separate the long-lived data from the others,
-we assign a sub-stream for the PC to prevent the repetitive page copies of GC in the original stream.
+we assign an additional stream, called substream, to copy valid pages
+of the original stream.
 
-In order to evaluate the effectiveness of PCStream, 
-we implemented the PC calculation and the stream mapping in the linux kernel to
-effectively identify data lifetime without manual tasks.
-Our experimental results show that, for RocksDB workload, PCStream can improve 
-the GC efficiency up to 66\% over the baseline stream mapping policy 
+Our experimental results show that {\sf PCStream} can reduce the
+garbage collection overhead as much as manual stream
+management techniques while no code modification is necessary.
+For a RocksDB benchmark, {\sf PCStream} improved WAF by 40\% over 
+the existing automatic technique.
 
-The rest of this paper is organized as follows. First, we describe the motivations of our study in Section 2.
-Section 3 describes the details of PCStream schemes. The experimental results are shown in Section 4. 
-Finally, several factors for desining PCStream are discussed in Section 5 and Section 6 gives conclusions.
+The rest of this paper is organized as follows. 
+We explain the key motivations behind {\sf PCStream} in Section 2. 
+Section 3 describes the main modules of the {\sf PCStream} allocator.
+The experimental results are shown in Section 4. 
+Finally, we conclude in Section 5 with a summary and future works. 
 
 \begin{comment}
 ...
