@@ -1,10 +1,43 @@
-\section{PCStream}
+\section{Design and Implementation of PCStream}
 In this section, we describe in detail our proposed automatic stream management technique.
 First, we explain how to obtain a PC, which is a lifetime hint of application data, at the system level. 
 We then describe the overall architecture of PCStream with how to allocate stream using the PC information. 
 Finally, we introduce an exceptional case with an optimization technique for the case.
 
-\subsection{Getting the program context}
+\subsection{Overview of PCStream}
+Figure~\ref{fig:architecture} shows the overall architecture of PCStream.
+When the write system call handler is called from the user process,
+it passes the user process information to the PC Extractor module.
+Then the PC value is extracted from the call stack of the writing process
+by the proposed method which will be explained in the following subsection.
+In order to analyze the lifetime of PCs,
+we need to maintain the written time and the update/delete time of the data for each PC.
+The lifetime of data starts when they are written for the first time, 
+and ends when they are updated or deleted.
+The Lifetime Monitor module gets LBAs from the write handler to 
+maintain the written time or update time of the data written to the address.
+When we get TRIM command, the TRIM handler also passes the LBA on to the Lifetime Monitor Module
+for keeping the delete time.
+Together with the PC values and their lifetimes, we can analyze the 
+lifetime of the PCs of the system.
+When the number of PCs are greater than the number of streams,
+we cluster several PCs of similar lifetime into a PC group 
+to assign the same stream.
+Finally, the Stream Allocation module dynamically allocates PC group
+to the proper stream according to the mapping policy.
+The detailed mapping policy will be described in Section 3.3.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=0.8\linewidth]{figure/architecture}
+	\caption{The overall architecture of PCStream}
+	\label{fig:architecture}
+	\vspace{-20pt}
+\end{figure}
+
+
+
+\subsection{Challenge: Automatic PC Computation}
 As mentioned earlier, we define the PC as the addition of instruction counter values along the 
 execution path of the function call reaching the write. 
 (In general, the function call process involves pushing the current instruction 
@@ -17,19 +50,23 @@ belonging to the code area of the process as the return address.
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.7\linewidth]{figure/getpc}
-	\caption{PC calculation method}
+	\includegraphics[width=1\linewidth]{figure/getpc}
+	\vspace{-10pt}
+	\caption{An automatic PC extraction method under compiler optimizations.}
 	\label{fig:getpc}
 	\vspace{-20pt}
 \end{figure}
 
-
 Figure~\ref{fig:getpc} shows the procedure. 
-The start address of the user process stack search is the stack pointer value of user space ({\it userland sp})
-that is maintained for returning from the kernel mode. 
-The end address of the search is the last address of the virtual memory unit space ({\tt vm\_area\_struct}) 
-containing userland sp from the process's virtual memory information ({\tt mm\_struct}). 
-The scope of the code area of the process is easily obtained from the virtual memory information. 
+The start address of the user process stack search, depicted by (a) in Figure~\ref{fig:getpc},
+is the stack pointer value of the user process 
+which is maintained by the system call handler for returning from the kernel mode. 
+The end address of the search, depicted by (b) in Figure~\ref{fig:getpc},
+is the last address of the virtual memory management unit which
+contains the user stack pointer value
+from the process's virtual memory information. 
+The scope of the code area of the process, depicted by (c) in Figure~\ref{fig:getpc},
+is obtained from the virtual memory layout of the process information. 
 In order to reduce the search time, we finish the searching 
 when we find return addresses more than the threshold.
 (Experimental results for various programs showed that different execution paths could be distinguished 
@@ -37,46 +74,32 @@ from each other only by a threshold value of 5 or less.)
 The sum of all the address values found during the searching is used 
 as the representative PC value of the context.
 This process takes 300 to 400 nanoseconds on a 3.4 GHz CPU machine, 
-so we can say the overhead is not huge.
-Moreover, since we can calculate PC once per write system call,
-the overhead is further decreased for long-length writes.
+so the time overhead is not huge.
+Moreover, since we compute PC once per write system call,
+the overhead can be distributed for long-length writes.
 
+\subsection{Stream Allocation Policy}
+In this paper, we focus on to show the feasibility of the PC-based approach, 
+so we limits several factors of PCStream.
+The number of application programs is limited to one, 
+and we assume the SSD can support enough number of streams
+to have 1:1 mapping policy for PCs and streams.
+Since every PC is mapped to stream under the 1:1 mapping, 
+we do not need to analyze the lifetime of PCs 
+or dynamically allocate streams.
+The implementation of those modules 
+is left as a future work. 
 
-\subsection{Overall Architecture of PCStream}
-Figure~\ref{fig:architecture} shows the overall architecture of PCStream.
-When a write request occurs, the PC value is calculated by searching the stack area of the writing process.
-In the example of Figure~\ref{fig:architecture}, data {\tt D0} and {\tt D1} with 
-different execution paths are recognized as PC IDs 0 and 1, respectively.
-PCStream analyzes the lifetime of each PC and maps the appropriate one of the available streams.
-In this paper, since we focus on to show the feasibility of the PC-based approach, 
-the number of application programs is limited to one, 
-and PC and stream are mapped to 1: 1.
-
-\begin{figure}[t]
-	\centering
-	\includegraphics[width=0.5\linewidth]{figure/architecture}
-	\caption{The overall architecture of PCStream}
-	\label{fig:architecture}
-	\vspace{-20pt}
-\end{figure}
-
-
-In the example shown in the Figure~\ref{fig:architecture}, PC0 is assigned 
-to stream 0 and PC1 is assigned to stream 1.
-The function of dynamically adjusting the mapping between PC and stream 
-according to the change of operation environment is left as a future work.
-For example, the number of PCs can be larger than the number of available streams
-due to the multiple applications or a large number of PCs of an application.
-For the case, the lifetime analyzer and PC clustering technique are required so that 
-the lifetime of each PC data is analyzed to allocate PCs having a similar lifetime to the same stream.
-Also, dynamic m: n mappings are needed to dynamically respond to changes in 
-application's write pattern or number of supported streams.
-
-The stream number determined according to the PC value is maintained in the inode of the file, 
-and is transmitted as the stream number when the write request is issued to the device. 
-The data of the transmitted request is stored in the physically separated area 
-in the SSD according to the specified stream number.
-
+For example, dynamic m:n mapping algorithm is
+needed for responding to changes of
+the application layer (increased number of PCs)
+or the device layer (decreased number of streams).
+For the PC clustering, we need to define the lifetime similarity of two PCs
+and develop a clustering algorithm.
+Also, we will develop the data structure
+for the Lifetime Monitor to efficiently find a corresponding PC 
+based on the discarded LBA because the deletion does not
+make the write program context.
 
 \subsection{PCs of various lifetimes and substreams}
 According to our observations, the lifetime of data is similar 
