@@ -1,24 +1,34 @@
 \section{Motivations}
-\subsection{Fallacy: LBA-based Data Lifetime Prediction}
-The current automatic method predicts the lifetime of the data by the address.
-That is, AutoStream is based on the assumption that the hotness or lifetime of data 
-written to any address space has temporal locality.
-In order to see the relationship between the address and the lifetime of data of the append-only workload,
-we analyzed the write pattern of RocksDB, one of the popular key-value store.
-The lifetime of data is measured by subtracting their logical write time from the invalid time.
-Figure~\ref{fig:lba_lifetime} shows the lifetime distribution based on the address and time.
-In Figure~\ref{fig:lba_lifetime}(a), all the data have very different lifetimes regardless of their 
-address.
-However, AutoStream can dynamically adjust the hotness of the address space
-according to the access frequency and recency.
-If the temporal locality of the hotness is sufficient, 
-it is possible to allocate an appropriate stream to the lifetime of the data.
-Therefore, we have checked the lifetime of data written in a chunk (1 MB-sized space) over time.
-As shown in Figure~\ref{fig:lba_lifetime}(b), it is difficult to allocate the proper stream 
-because the lifetime is uneven and the interval with similar lifetime is short.
-For append-only workload, it means that the period of enjoying the dynamic allocation is short 
-due to the lack of temporal locality of the hotness.
-For the automatic stream allocation, thus, more information of the application layer is required.
+\subsection{Fallacy: LBA-based lifetime prediction}
+
+Current automatic methods predict the lifetime of data based on the update
+frequency of LBAs~\cite{}.  For example, AutoStream~\cite{} assumes that, if
+some LBAs are frequently rewritten by applications, those LBAs hold hot data.
+This LBA-based lifetime prediction works poorly on modern applications, where
+the majority of new data are written in an append-only manner.  To understand
+the correlation between LBAs and the lifetime of data under append-only
+workloads, we analyzed the write pattern of RocksDB~\cite{}, which is a
+popular key-value store based on the LSM-tree algorithm~\cite{}.
+
+Figure~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
+according to LBAs. Here, the lifetime of data is defined to be an elapsed time
+(unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
+invalidated by an overwrite or a TRIM command. As shown in
+Figure~\ref{fig:lba_lifetime}(a), there is no strong correlation between the
+lifetime and LBAs -- all the data have very different lifetimes, regardless of
+their LBA numbers. We also observed how the lifetimes of LBAs changed according
+to the time in a more microscopic view.  For a small number of consecutive LBAs
+(256 LBAs)\textcolor{red}{, composing a 1 MB chunk (Q: why should it be a chunk
+not few LBAs?)}, we plot the trend of the lifetime of the chunk for 600 seconds
+in Figure~\ref{fig:lba_lifetime}(b). As shown in the figure, the LBAs belonging
+to the chunk first hold hot data. For example, at the logical time
+\textcolor{red}{XX}, the lifetime of the chunk is close to \textcolor{red}{XX
+$\mu$sec}.  At \textcolor{red}{YY}, however, its lifetime increases to
+\textcolor{red}{XX $\mu$sec}. Then, the lifetime drops to \textcolor{red}{XX
+$\mu$sec} at \textcolor{red}{XX}.  Consequently, our observations shown in
+Figure~\ref{fig:lba_lifetime} indicate that, under append-only
+workloads, LBAs couldn't be a useful metric that decides the hotness or
+lifetime of data that they hold.
 
 \begin{figure}[t]
 	\centering
@@ -26,34 +36,49 @@ For the automatic stream allocation, thus, more information of the application l
 	\subfloat[Lifetime by time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk}}
 	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
 	\vspace{-10pt}
-	\caption{The lifetime distribution according to the address and time.}
-	\label{fig:lba_lifetime}
+	\caption{
+		The lifetime distribution according to the address and time.
+		\textcolor{red}{(TODO: 1) it would be good to include same graphs with
+		in-place update workloads; 2) add a unit in the y-axis.)}}
+		\label{fig:lba_lifetime}
 	\vspace{-15pt}
 \end{figure}
 
-%The address-based approach can not properly distinguishes the lifetime of the data written by
-%the append-only workload.
-%To sum up, although the application knows the lifetime of the written data, it is hard to 
-%deliver the information to the system layer without modification.
+\subsection{Program context as a lifetime predictor}
 
-\subsection{Program context as a Reliable Lifetime Estimator}
-The lifetime of the data depends on the purpose of the application. 
-In general, the writes for different purposes are implemented to have different execution paths.
-For example, RocksDB writes a log file and a compaction file in a different functions.
+In order to properly assign data to a specific stream in accordance with their
+lifetimes, it is necessary to find a new metric for lifetime prediction.  It is
+obvious that append-only applications write data with different lifetimes.  For
+example, RocksDB appends write-ahead logs to storage to ensure data
+persistence.  Those logs have short lifetimes because they are quickly deleted
+(or trimmed) after original data are safely stored in the persistent storage.
+The flush module of RocksDB (which materializes the content of a memtable in
+DRAM, often called a L0 table, to a L1 table in the storage) generates data
+with relatively short lifetimes. This is because a L1 table will be flushed to
+a L2 table and be removed in the near future. Conversely, a compaction module
+often writes long-lived data that are unlikely to be removed for a long time.
 
-The program context is defined by the summing instruction counter values 
-of each execution path of function calls that lead to a write system call which causes write requests,
-so it is useful for identifying the purpose of the application. 
-Ha et al.~\cite{PCHa} proposed update time based data separator using PC. 
-They predicted data update times by exploiting program contexts as hints. 
-Since a program context represents a program phase and the same phase is likely to be executed multiple times, 
-program contexts have been used in predicting future behavior of programs. 
-We extend this approach to differentiate the lifetime of data through invalid time as well as update time. 
-In particular, since append-only workloads such as RocksDB have a write-TRIM-write pattern, 
-it is necessary to consider an invalid time for an accurate lifetime evaluation.
-In previous studies~\cite{MultiStream}, especially for NoSQL DB workload, 
-it is known that the lifetime of data can be distinguished by the behavior of applications such as logging, 
-flushing, and compaction. 
+The above observation implies that, if we are able to know the detailed
+behaviors of append-only applications, data with different lifetimes can be
+isolated in separate streams in an SSD. As mentioned in Section~\ref{}, a
+common solution~\cite{MultiStream} to realizing this is manually modify an
+application code so that each module assigns a unique stream ID to data stream
+it generates. However, owing to considerable implementation efforts
+required to modify individual applications, this approach is not widely used in
+real-world environments.
+
+In this paper, we claim that a program context is a useful tool that delivers
+the information of data lifetimes to the storage side without modifying application
+code manually. The program context is calculated at runtime by summing the
+values of program counters that are identified along function-call paths
+of an application.  Logging, flushing, and compaction are invoked through
+different function-call paths.  Thus, by leveraging the program context, we are
+able to identify software modules that generate specific write streams.  Note
+that using the program context to identify characteristics of data is not new.
+Ha \textit{et al.} proposed a way of separating hot-cold data by referring to the program
+context~\cite{PCHa}. This work, however, was not designed for append-only
+applications and didn't take into account the use of a multi-stream feature of
+a modern SSD.
 
 \begin{figure}[!t]
 \centering
@@ -64,30 +89,56 @@ flushing, and compaction.
 \vspace{-10pt}
 \subfloat[manual: flush] {\includegraphics[width=0.23\textwidth]{figure/type_3}}
 \subfloat[PC\#3]{\includegraphics[width=0.23\textwidth]{figure/pcID_3}}
-\caption{Data lifetime distributions of different PCs.} \label{fig:types_and_PCs}
+\caption{Data lifetime distributions of different PCs. \textcolor{red}{(TODO: zoom in the figures)}} 
+\label{fig:types_and_PCs}
 \vspace{-20pt}
 \end{figure}
 
-In order to verify that the PC information is enough to recognize the behavior of these applications, 
-we ran RocksDB and compared the data lifetimes when the type of data was manually identified 
-aginst when the data is identified by PC values.
-Figure~\ref{fig:types_and_PCs} shows the lifetime distribution of data separated by manual scheme and 
-PC values for two cases, i.e., log and flush.
-First, Figure~\ref{fig:types_and_PCs}(a) represents the lifetime of the log file of RocksDB. 
-RocksDB's log data is short-lived because the data in memory is temporarily maintained
-until the data is flushed to the storage for the consistency reason~\cite{RocksDB}.
-Figure~\ref{fig:types_and_PCs}(b) depicts the data lifetime of ID 2 among the classified PCs 
-according to the our proposed collection method.
-As these two graphs have the same lifetime pattern, we can say PC ID 2 represents the context of the log file.
-Similary, Figure~\ref{fig:types_and_PCs}(c) shows the lifetime of flushed static sorted table (SST)
-files of RocksDB.
-The flush operation stores the memory data as an SST file at level 0 of the LSM tree in the storage.
-The file is deleted by a compaction operation that removes invalid data when each level is full.
-Due to the characteristics of the LSM tree, which becomes smaller as it goes to top level,
-the compaction is often performed at level 0,
-so the flushed data at level 0 has a relatively short lifetime~\cite{RocksDB}.
-Figure~\ref{fig:types_and_PCs}(d) shows data lifetime of PC ID 3.
-As expected, these two graphs have the similar lifetime patterns proving the PC can be a good lifetime hint.
+In order to confirm our hypothesis that the program context could provide
+enough information to recognize detailed behaviors of an application, we
+conducted a series of experiments using RocksDB, comparing the accuracy of
+lifetime prediction by two different methods: 1) when the type of data streams
+is manually identified by modifying the code (\texttt{manual}) and 2) when the
+stream type is automatically tagged by the program context
+(\texttt{automatic}).  Figure~\ref{fig:types_and_PCs} compares the lifetime
+distributions of data that are separated by \texttt{manual} and
+\texttt{automatic}.  Figures~\ref{fig:types_and_PCs}(a) and (b) represent how
+well the two methods identify log data written by
+RocksDB.  As mentioned earlier, log data are short-lived, and the
+\texttt{automatic} method with the program context shows high accuracy
+comparable to \texttt{manual}. Similarly, Figures~\ref{fig:types_and_PCs}(c)
+and (d) shows the accuracy of identifying data streams written by the flush
+module of RocksDB.  As expected, these two graphs have the similar lifetime
+patterns, which proves that the program context can be a good lifetime hint.
+
+
+%because the data in memory
+%is temporarily maintained until the data is flushed to the storage for the
+%consistency reason~\cite{RocksDB}.
+
+
+%In order to verify that the PC information is enough to recognize the behavior
+%of these applications, we ran RocksDB and compared the data lifetimes when the
+%type of data was manually identified aginst when the data is identified by PC
+%values.  Figure~\ref{fig:types_and_PCs} shows the lifetime distribution of data
+%separated by manual scheme and PC values for two cases, i.e., log and flush.
+%First, Figure~\ref{fig:types_and_PCs}(a) represents the lifetime of the log
+%file of RocksDB.  RocksDB's log data is short-lived because the data in memory
+%is temporarily maintained until the data is flushed to the storage for the
+%consistency reason~\cite{RocksDB}.  Figure~\ref{fig:types_and_PCs}(b) depicts
+%the data lifetime of ID 2 among the classified PCs according to the our
+%proposed collection method.  As these two graphs have the same lifetime
+%pattern, we can say PC ID 2 represents the context of the log file.  Similary,
+%Figure~\ref{fig:types_and_PCs}(c) shows the lifetime of flushed static sorted
+%table (SST) files of RocksDB.  The flush operation stores the memory data as an
+%SST file at level 0 of the LSM tree in the storage.  The file is deleted by a
+%compaction operation that removes invalid data when each level is full.  Due to
+%the characteristics of the LSM tree, which becomes smaller as it goes to top
+%level, the compaction is often performed at level 0, so the flushed data at
+%level 0 has a relatively short lifetime~\cite{RocksDB}.
+%Figure~\ref{fig:types_and_PCs}(d) shows data lifetime of PC ID 3.  As expected,
+%these two graphs have the similar lifetime patterns proving the PC can be a
+%good lifetime hint.
 
 
 % commentated
