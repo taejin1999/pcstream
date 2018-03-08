@@ -1,24 +1,34 @@
 \section{Motivations}
-\subsection{Fallacy: LBA-based Data Lifetime Prediction}
-The current automatic method predicts the lifetime of the data by the address.
-That is, AutoStream is based on the assumption that the hotness or lifetime of data 
-written to any address space has temporal locality.
-In order to see the relationship between the address and the lifetime of data of the append-only workload,
-we analyzed the write pattern of RocksDB, one of the popular key-value store.
-The lifetime of data is measured by subtracting their logical write time from the invalid time.
-Figure~\ref{fig:lba_lifetime} shows the lifetime distribution based on the address and time.
-In Figure~\ref{fig:lba_lifetime}(a), all the data have very different lifetimes regardless of their 
-address.
-However, AutoStream can dynamically adjust the hotness of the address space
-according to the access frequency and recency.
-If the temporal locality of the hotness is sufficient, 
-it is possible to allocate an appropriate stream to the lifetime of the data.
-Therefore, we have checked the lifetime of data written in a chunk (1 MB-sized space) over time.
-As shown in Figure~\ref{fig:lba_lifetime}(b), it is difficult to allocate the proper stream 
-because the lifetime is uneven and the interval with similar lifetime is short.
-For append-only workload, it means that the period of enjoying the dynamic allocation is short 
-due to the lack of temporal locality of the hotness.
-For the automatic stream allocation, thus, more information of the application layer is required.
+\subsection{Fallacy: LBA-based lifetime prediction}
+
+Current automatic methods predict the lifetime of data based on the update
+frequency of LBAs~\cite{}.  For example, AutoStream~\cite{} assumes that, if
+some LBAs are frequently rewritten by applications, those LBAs hold hot data.
+This LBA-based lifetime prediction works poorly on modern applications, where
+the majority of new data are written in an append-only manner.  To understand
+the correlation between LBAs and the lifetime of data under append-only
+workloads, we analyzed the write pattern of RocksDB~\cite{}, which is a
+popular key-value store based on the LSM-tree algorithm~\cite{}.
+
+Figure~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
+according to LBAs. Here, the lifetime of data is defined to be an elapsed time
+(unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
+invalidated by an overwrite or a TRIM command. As shown in
+Figure~\ref{fig:lba_lifetime}(a), there is no strong correlation between the
+lifetime and LBAs -- all the data have very different lifetimes, regardless of
+their LBA numbers. We also observed how the lifetimes of LBAs changed according
+to the time in a more microscopic view.  For a small number of consecutive LBAs
+(256 LBAs)\textcolor{red}{, composing a 1 MB chunk (Q: why should it be a chunk
+not few LBAs?)}, we plot the trend of the lifetime of the chunk for 600 seconds
+in Figure~\ref{fig:lba_lifetime}(b). As shown in the figure, the LBAs belonging
+to the chunk first hold hot data. For example, at the logical time
+\textcolor{red}{XX}, the lifetime of the chunk is close to \textcolor{red}{XX
+$\mu$sec}.  At \textcolor{red}{YY}, however, its lifetime increases to
+\textcolor{red}{XX $\mu$sec}. Then, the lifetime drops to \textcolor{red}{XX
+$\mu$sec} at \textcolor{red}{XX}.  Consequently, our observations shown in
+Figure~\ref{fig:lba_lifetime} indicate that, under append-only
+workloads, LBAs couldn't be a useful metric that decides the hotness or
+lifetime of data that they hold.
 
 \begin{figure}[t]
 	\centering
@@ -26,8 +36,11 @@ For the automatic stream allocation, thus, more information of the application l
 	\subfloat[Lifetime by time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk}}
 	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
 	\vspace{-10pt}
-	\caption{The lifetime distribution according to the address and time.}
-	\label{fig:lba_lifetime}
+	\caption{
+		The lifetime distribution according to the address and time.
+		\textcolor{red}{(TODO: 1) it would be good to include same graphs with
+		in-place update workloads; 2) add a unit in the y-axis.)}}
+		\label{fig:lba_lifetime}
 	\vspace{-15pt}
 \end{figure}
 
@@ -36,7 +49,7 @@ For the automatic stream allocation, thus, more information of the application l
 %To sum up, although the application knows the lifetime of the written data, it is hard to 
 %deliver the information to the system layer without modification.
 
-\subsection{Program context as a Reliable Lifetime Estimator}
+\subsection{Program context as a lifetime predictor}
 The lifetime of the data depends on the purpose of the application. 
 In general, the writes for different purposes are implemented to have different execution paths.
 For example, RocksDB writes a log file and a compaction file in a different functions.
