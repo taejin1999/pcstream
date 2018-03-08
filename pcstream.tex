@@ -29,13 +29,11 @@ The detailed mapping policy will be described in Section 3.3.
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.8\linewidth]{figure/architecture}
-	\caption{The overall architecture of PCStream}
+	\includegraphics[width=0.8\linewidth]{figure/architecture2}
+	\caption{An overall architecture of {\sf PCStream}}
 	\label{fig:architecture}
 	\vspace{-20pt}
 \end{figure}
-
-
 
 \subsection{Challenge: Automatic PC Computation}
 As mentioned earlier, we define the PC as the addition of instruction counter values along the 
@@ -101,7 +99,7 @@ for the Lifetime Monitor to efficiently find a corresponding PC
 based on the discarded LBA because the deletion does not
 make the write program context.
 
-\subsection{PCs of various lifetimes and substreams}
+\subsection{Stream Refinement}
 According to our observations, the lifetime of data is similar 
 for contexts with simple operations such as log, as shown in section 2, 
 but some contexts generate various lifetime data.

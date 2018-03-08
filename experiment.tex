@@ -1,3 +1,38 @@
 \section{Experimental Results}
-TBD
+For our evaluation, we implemented PC extractor module at the 
+system call layer 
+and Stream Allocation module at the block I/O layer in the Linux kernel 3.16.
+
+In order to evaluate the effectiveness of PCStream,
+we implemented the multi-stream feature and substream concept
+to the in-house SSD emulator
+based on the open flash development platform~\cite{AMF}.
+The number of streams was set to 8 for the evaluation.
+The SSD emulator was 8GB with four channels with four ways, and 
+the number of blocks per a parallel unit was 512 and
+the number of pages per block was 256 with 4KB-sized page.
+Due to the limited capacity of the emulator, 
+we scaled down RocksDB configuration.
+The base file size is set to 8 MB
+with the size of key-value is 8 KB and the number of levels was set to 4.
+However, the size of level multiplier is remained to be 10 as an usual setting,
+which means the size of the next level is 10 times larger than previous level,
+to maintain the level access patterns during the compaction.
+
+For benchmarks, we used three scenarios of db\_bench and db\_stress of RocksDB.
+The update random scenario (read-modify-write for random keys), {\tt UR}, and 
+the append random scenario (read-modify-write with growing values), {\tt AR}, are
+for intensively updating key-value pairs.
+The fill random scenario (write values in random key order), {\tt FR}, simply writes key-value pairs
+while db\_stress (data comparison with random write/delete/read), {\tt ST} shows complex 
+operations including deletion.
+
+For the data separation performance evaluation, 
+we also implemented Autostream, manual technique, and
+baseline which does not use the stream allocation policy.
+We compared WAF of the existing techniques with PCStream
+for each scenario.
+
+
+
 

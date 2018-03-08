@@ -56,8 +56,8 @@ By extracting program contexts during the run time,
 {\sf PCStream}  automates the data-to-stream mapping.  
 When data mapped to the same
 stream show large differences in their lifetimes, {\sf PCStream}
-dynamically splits the current stream into multiple substreams
-with more uniform data lifetimes during garbage collection.
+moves the long-lived data of the current stream to 
+its substream during garbage collection.
 Our experimental results show that {\sf PCStream} can reduce the
 garbage collection overhead as much as manual stream
 management techniques while no code modification is necessary.
