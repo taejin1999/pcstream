@@ -1,31 +1,30 @@
-\section{Design and Implementation of PCStream}
-In this section, we describe in detail our proposed automatic stream management technique.
-First, we explain how to obtain a PC, which is a lifetime hint of application data, at the system level. 
-We then describe the overall architecture of PCStream with how to allocate stream using the PC information. 
-Finally, we introduce an exceptional case with an optimization technique for the case.
+\section{Design of PCStream}
+In this section, we describe in detail the proposed automatic stream management
+technique, called \textit{PCStream}.  First, we explain a mechanism that
+automatically obtains the program context (PC) value at runtime, and then
+describe how multiple write streams with different PC values are combined and
+delivered to an SSD. Finally, we introduce an additional technique that further
+optimizes PCStream.
 
-\subsection{Overview of PCStream}
-Figure~\ref{fig:architecture} shows the overall architecture of PCStream.
-When the write system call handler is called from the user process,
-it passes the user process information to the PC Extractor module.
-Then the PC value is extracted from the call stack of the writing process
-by the proposed method which will be explained in the following subsection.
-In order to analyze the lifetime of PCs,
-we need to maintain the written time and the update/delete time of the data for each PC.
-The lifetime of data starts when they are written for the first time, 
-and ends when they are updated or deleted.
-The Lifetime Monitor module gets LBAs from the write handler to 
-maintain the written time or update time of the data written to the address.
-When we get TRIM command, the TRIM handler also passes the LBA on to the Lifetime Monitor Module
-for keeping the delete time.
-Together with the PC values and their lifetimes, we can analyze the 
-lifetime of the PCs of the system.
-When the number of PCs are greater than the number of streams,
-we cluster several PCs of similar lifetime into a PC group 
-to assign the same stream.
-Finally, the Stream Allocation module dynamically allocates PC group
-to the proper stream according to the mapping policy.
-The detailed mapping policy will be described in Section 3.3.
+\subsection{Design overview}
+Figure~\ref{fig:architecture} shows the overall architecture of PCStream.  When
+the write system call handler is called from the user process, it passes the
+user process information to the PC Extractor module.  Then the PC value is
+extracted from the call stack of the writing process by the proposed method
+which will be explained in the following subsection.  In order to analyze the
+lifetime of PCs, we need to maintain the written time and the update/delete
+time of the data for each PC.  The lifetime of data starts when they are
+written for the first time, and ends when they are updated or deleted.  The
+Lifetime Monitor module gets LBAs from the write handler to maintain the
+written time or update time of the data written to the address.  When we get
+TRIM command, the TRIM handler also passes the LBA on to the Lifetime Monitor
+Module for keeping the delete time.  Together with the PC values and their
+lifetimes, we can analyze the lifetime of the PCs of the system.  When the
+number of PCs are greater than the number of streams, we cluster several PCs of
+similar lifetime into a PC group to assign the same stream.  Finally, the
+Stream Allocation module dynamically allocates PC group to the proper stream
+according to the mapping policy.  The detailed mapping policy will be described
+in Section 3.3.
 
 \begin{figure}[t]
 	\centering
@@ -35,7 +34,7 @@ The detailed mapping policy will be described in Section 3.3.
 	\vspace{-20pt}
 \end{figure}
 
-\subsection{Challenge: Automatic PC Computation}
+\subsection{Automatic PC Computation}
 As mentioned earlier, we define the PC as the addition of instruction counter values along the 
 execution path of the function call reaching the write. 
 (In general, the function call process involves pushing the current instruction 
