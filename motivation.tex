@@ -2,44 +2,48 @@
 \subsection{Fallacy: LBA-based lifetime prediction}
 
 Current automatic methods predict the lifetime of data based on the update
-frequency of LBAs~\cite{}.  For example, AutoStream~\cite{} assumes that, if
+frequency of LBAs~\cite{AutoStream}.  
+For example, AutoStream~\cite{AutoStream} assumes that, if
 some LBAs are frequently rewritten by applications, those LBAs hold hot data.
 This LBA-based lifetime prediction works poorly on modern applications, where
 the majority of new data are written in an append-only manner.  To understand
 the correlation between LBAs and the lifetime of data under append-only
-workloads, we analyzed the write pattern of RocksDB~\cite{}, which is a
-popular key-value store based on the LSM-tree algorithm~\cite{}.
+workloads, we analyzed the write pattern of RocksDB~\cite{RocksDB}, which is a
+popular key-value store based on the LSM-tree algorithm~\cite{LSM}.
 
 Figure~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
-according to LBAs. Here, the lifetime of data is defined to be an elapsed time
-(unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
-invalidated by an overwrite or a TRIM command. As shown in
+according to LBAs. Here, the lifetime of data is defined to be 
+a number of write requests between when the data is written 
+to when the data is invalidated an overwrite or a TRIM command. 
+%an elapsed time (unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
+%invalidated by an overwrite or a TRIM command. 
+As shown in
 Figure~\ref{fig:lba_lifetime}(a), there is no strong correlation between the
 lifetime and LBAs -- all the data have very different lifetimes, regardless of
 their LBA numbers. We also observed how the lifetimes of LBAs changed according
 to the time in a more microscopic view.  For a small number of consecutive LBAs
-(256 LBAs)\textcolor{red}{, composing a 1 MB chunk (Q: why should it be a chunk
-not few LBAs?)}, we plot the trend of the lifetime of the chunk for 600 seconds
+(256 LBAs), composing a 1 MB chunk, 
+we plot the trend of the lifetime of the chunk for 630 data
 in Figure~\ref{fig:lba_lifetime}(b). As shown in the figure, the LBAs belonging
 to the chunk first hold hot data. For example, at the logical time
-\textcolor{red}{XX}, the lifetime of the chunk is close to \textcolor{red}{XX
-$\mu$sec}.  At \textcolor{red}{YY}, however, its lifetime increases to
-\textcolor{red}{XX $\mu$sec}. Then, the lifetime drops to \textcolor{red}{XX
-$\mu$sec} at \textcolor{red}{XX}.  Consequently, our observations shown in
+10, the lifetime of the chunk is close to 1 requests.  
+At the logical time 450, however, its lifetime increases to
+2.6 million requests. Then, the lifetime drops to 1.2 million
+requests at 600 logical time.  Consequently, our observations shown in
 Figure~\ref{fig:lba_lifetime} indicate that, under append-only
 workloads, LBAs couldn't be a useful metric that decides the hotness or
 lifetime of data that they hold.
 
 \begin{figure}[t]
 	\centering
-	\subfloat[Lifetime by address]{\includegraphics[width=0.25\textwidth]{figure/lba_lifetime}}
-	\subfloat[Lifetime by time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk}}
+	\subfloat[Lifetime patterns over LBAs]{\includegraphics[width=0.25\textwidth]{figure/lba_lifetime2}}  % data from 0/03031641
+	\subfloat[Lifetime patterns over time (for a fixed LBA range)]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk2}}
 	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
 	\vspace{-10pt}
 	\caption{
-		The lifetime distribution according to the address and time.
-		\textcolor{red}{(TODO: 1) it would be good to include same graphs with
-		in-place update workloads; 2) add a unit in the y-axis.)}}
+		Data lifetime distributions over varying LBAs and logical times.
+		\textcolor{red}{(TODO:) it would be good to include same graphs with
+		in-place update workloads;}}
 		\label{fig:lba_lifetime}
 	\vspace{-15pt}
 \end{figure}
@@ -60,7 +64,7 @@ often writes long-lived data that are unlikely to be removed for a long time.
 
 The above observation implies that, if we are able to know the detailed
 behaviors of append-only applications, data with different lifetimes can be
-isolated in separate streams in an SSD. As mentioned in Section~\ref{}, a
+isolated in separate streams in an SSD. As mentioned in Section~\ref{sec:intro}, a
 common solution~\cite{MultiStream} to realizing this is manually modify an
 application code so that each module assigns a unique stream ID to data stream
 it generates. However, owing to considerable implementation efforts
@@ -83,13 +87,13 @@ a modern SSD.
 \begin{figure}[!t]
 \centering
 \hspace{1pt}
-\subfloat[manual: log]{\includegraphics[width=0.23\textwidth]{figure/type_1}}
-\subfloat[PC\#2]{\includegraphics[width=0.23\textwidth]{figure/pcID_2}}
+\subfloat[manual: log]{\includegraphics[width=0.23\textwidth]{figure/type_1b}} % data from 4/03031953 
+\subfloat[PC\#2]{\includegraphics[width=0.23\textwidth]{figure/pcID_2b}}
 \hfill
 \vspace{-10pt}
-\subfloat[manual: flush] {\includegraphics[width=0.23\textwidth]{figure/type_3}}
-\subfloat[PC\#3]{\includegraphics[width=0.23\textwidth]{figure/pcID_3}}
-\caption{Data lifetime distributions of different PCs. \textcolor{red}{(TODO: zoom in the figures)}} 
+\subfloat[manual: flush] {\includegraphics[width=0.23\textwidth]{figure/type_3b}}
+\subfloat[PC\#3]{\includegraphics[width=0.23\textwidth]{figure/pcID_3b}}
+\caption{Data lifetime distributions of different PCs.} 
 \label{fig:types_and_PCs}
 \vspace{-20pt}
 \end{figure}
