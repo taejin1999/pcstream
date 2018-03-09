@@ -1,3 +1,18 @@
 \section{Conclusion}
-TBD
-
+In this paper, we presented a new fully automatic stream management technique,
+called PCStream, which can improve the accuracy of data separation
+using the application level information.
+In the modern append-only workload, since the hotness of data is regardless of 
+the its address, 
+LBA-based existing automatic stream management technique have limitations on 
+identifying the hotness of data.
+PCStream was motivated by our observation that data lifetimes can be
+reliably predicted using write program contexts which is from the higher
+abstraction level than LBAs.
+By allocating the identified PCs into streams according to the mapping policy,
+PCStream can separate different lifetime data. 
+For some PCs showing various lifetime, PCStream moves the long-lived data of 
+current stream to its substream during the garbage collection.
+Experimental result showed that PCStream reduces WAF by 40\% over the existing
+automatic technique.
+Future work ...
