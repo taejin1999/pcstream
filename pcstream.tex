@@ -1,49 +1,89 @@
 \section{Design of PCStream}
 In this section, we describe in detail the proposed automatic stream management
-technique, called \textit{PCStream}.  First, we explain a mechanism that
-automatically obtains the program context (PC) value at runtime, and then
-describe how multiple write streams with different PC values are combined and
-delivered to an SSD. Finally, we introduce an additional technique that further
-optimizes PCStream.
+technique, \textit{PCStream}.  We first explain a mechanism that automatically
+obtains the program context (PC) value at runtime, and then describe how
+multiple write streams with different PC values are combined and delivered to
+an SSD. Finally, we introduce an additional technique that further optimizes
+PCStream.
 
-\subsection{Design overview}
-Figure~\ref{fig:architecture} shows the overall architecture of PCStream.  When
-the write system call handler is called from the user process, it passes the
-user process information to the PC Extractor module.  Then the PC value is
-extracted from the call stack of the writing process by the proposed method
-which will be explained in the following subsection.  In order to analyze the
-lifetime of PCs, we need to maintain the written time and the update/delete
-time of the data for each PC.  The lifetime of data starts when they are
-written for the first time, and ends when they are updated or deleted.  The
-Lifetime Monitor module gets LBAs from the write handler to maintain the
-written time or update time of the data written to the address.  When we get
-TRIM command, the TRIM handler also passes the LBA on to the Lifetime Monitor
-Module for keeping the delete time.  Together with the PC values and their
-lifetimes, we can analyze the lifetime of the PCs of the system.  When the
-number of PCs are greater than the number of streams, we cluster several PCs of
-similar lifetime into a PC group to assign the same stream.  Finally, the
-Stream Allocation module dynamically allocates PC group to the proper stream
-according to the mapping policy.  The detailed mapping policy will be described
-in Section 3.3.
+%\subsection{Design overview}
+
+Figure~\ref{fig:architecture} shows the overall architecture of PCStream, which
+is composed of a PC extractor, a lifetime analyzer, and a PC-to-stream mapper.
+The PC extractor is implemented in the Linux kernel as part of a system call
+handler: its responsibility is for intercepting write-related system calls
+(e.g., \texttt{write()}, \texttt{writev()}, and so on) and extracting a PC
+value.  This enables us to keep track of PC values corresponding to new write
+streams from a specific module of an application. An obtained PC value is
+forwarded to the lifetime analyzer that estimates expected lifetimes of data
+belonging to a given PC. To know when data is deleted or removed, the lifetime
+analyzer also intercepts TRIM requests from a file system.  Based on the
+lifetime information, the PC-to-stream mapper clusters PC values with similar
+lifetimes and maps them together to the same stream ID.  This mapping is
+required because, while the number of PCs is unlimited, the number of stream
+IDs exposed by an SSD is limited to 8 or 16.
+
+%Figure~\ref{fig:architecture} shows the overall architecture of PCStream.  When
+%the write system call handler is called from the user process, it passes the
+%user process information to the PC Extractor module.  Then the PC value is
+%extracted from the call stack of the writing process by the proposed method
+%which will be explained in the following subsection.  In order to analyze the
+%lifetime of PCs, we need to maintain the written time and the update/delete
+%time of the data for each PC.  The lifetime of data starts when they are
+%written for the first time, and ends when they are updated or deleted.  The
+%Lifetime Monitor module gets LBAs from the write handler to maintain the
+%written time or update time of the data written to the address.  When we get
+%TRIM command, the TRIM handler also passes the LBA on to the Lifetime Monitor
+%Module for keeping the delete time.  Together with the PC values and their
+%lifetimes, we can analyze the lifetime of the PCs of the system.  When the
+%number of PCs are greater than the number of streams, we cluster several PCs of
+%similar lifetime into a PC group to assign the same stream.  Finally, the
+%Stream Allocation module dynamically allocates PC group to the proper stream
+%according to the mapping policy.  The detailed mapping policy will be described
+%in Section 3.3.
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.8\linewidth]{figure/architecture2}
 	\caption{An overall architecture of {\sf PCStream}}
 	\label{fig:architecture}
-	\vspace{-20pt}
+	%\vspace{-20pt}
 \end{figure}
 
-\subsection{Automatic PC Computation}
-As mentioned earlier, we define the PC as the addition of instruction counter values along the 
-execution path of the function call reaching the write. 
-(In general, the function call process involves pushing the current instruction 
-counter to the return address of the process stack.) 
-Back tracing the stack and collect the return address can easily be done using the frame pointer register. 
-However, when using the {\tt -fomit-frame-pointer} compile option of GCC, 
-the general back tracing is impossible because frame pointer register is used for the general purpose~\cite{GCC}. 
-Instead, we search from the top to bottom of the stack and regard the stack value 
-belonging to the code area of the process as the return address. 
+\subsection{Automatic PC computation}
+As mentioned earlier, a PC value is defined as the sum of the program counter
+values along the execution path of the function call.  A function call involves
+pushing the next program counter to the process stack as a return address,
+which  is used as a return location to keep executing a caller function when a
+callee function is finished.  In general, by using a frame register, we are
+able to back-track the stack frames of the process and selectively collect
+return addresses, which are then used for computing a PC value. For example,
+Figure~\ref{fig:getpc}(a) illustrates how a PC value is obtained by
+back-tracking the process stack.
+
+Unfortunately, C/C++ compilers (e.g., GNU GCC) often optimize an output code so
+that it does not use a frame register when calling functions.  One example is a
+{\tt -fomit-frame-pointer} option of GCC. While it is effective in saving
+precious resources like CPU registers, this makes it difficult for us to
+selectively back-track return addresses only. One alternative is fully examine
+every word in the process stack and find out ones that point to the code
+segment of the process's virtual address.  Modern OSes divide the process's
+virtual address into segments for their purposes, and thus program instructions
+(code) are stored in a specific range of the virtual address space (e.g.,
+\textcolor{red}{\texttt{0xXXXXh}} to \textcolor{red}{\texttt{0xYYYYh}} in the
+Linux).  If there are words that hold a value pointing to somewhere in the code
+segment, they are highly likely to be one of the return values.  
+\begin{comment} % DO NO REMOVE
+Moreover, since the PC extractor is implemented in the kernel, it is not only
+able to access the entire virtual address of a process, but also know the
+address space layout.
+\end{comment}
+
+Searching the entire process stack would require long CPU time. Therefore, the
+search process is finished when it finds a certain number of return addresses
+in the stack. Currently, this threshold value is set to 5.  In our experiments
+with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec, so
+its overhead is not so huge.  
 
 \begin{figure}[t]
 	\centering
@@ -53,27 +93,6 @@ belonging to the code area of the process as the return address.
 	\label{fig:getpc}
 	\vspace{-20pt}
 \end{figure}
-
-Figure~\ref{fig:getpc} shows the procedure. 
-The start address of the user process stack search, depicted by (a) in Figure~\ref{fig:getpc},
-is the stack pointer value of the user process 
-which is maintained by the system call handler for returning from the kernel mode. 
-The end address of the search, depicted by (b) in Figure~\ref{fig:getpc},
-is the last address of the virtual memory management unit which
-contains the user stack pointer value
-from the process's virtual memory information. 
-The scope of the code area of the process, depicted by (c) in Figure~\ref{fig:getpc},
-is obtained from the virtual memory layout of the process information. 
-In order to reduce the search time, we finish the searching 
-when we find return addresses more than the threshold.
-(Experimental results for various programs showed that different execution paths could be distinguished 
-from each other only by a threshold value of 5 or less.)
-The sum of all the address values found during the searching is used 
-as the representative PC value of the context.
-This process takes 300 to 400 nanoseconds on a 3.4 GHz CPU machine, 
-so the time overhead is not huge.
-Moreover, since we compute PC once per write system call,
-the overhead can be distributed for long-length writes.
 
 \subsection{Stream Allocation Policy}
 In this paper, we focus on to show the feasibility of the PC-based approach, 
