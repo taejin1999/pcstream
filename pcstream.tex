@@ -11,7 +11,7 @@ PCStream.
 Figure~\ref{fig:architecture} shows the overall architecture of PCStream, which
 is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer}, and a
 \textit{PC-to-stream mapper}.  The PC extractor is implemented in the Linux
-kernel as part of a system call handler: its responsibility is for intercepting
+kernel as part of a system call handler. Its responsibility is for intercepting
 write-related system calls (e.g., \texttt{write()}, \texttt{writev()}, and so
 on) and extracting a PC value.  This enables us to keep track of PC values
 corresponding to new write streams from a specific module of an application. An
@@ -20,7 +20,7 @@ lifetimes of data belonging to a given PC. To know when data is deleted or
 removed, the lifetime analyzer also intercepts TRIM requests from a file
 system.  Based on the lifetime information, the PC-to-stream mapper clusters PC
 values with similar lifetimes and maps them together to the same stream ID.
-This mapping is required because, while the number of PCs is unlimited, the
+This mapping is required because, while the number of PCs created by applications is unlimited, the
 number of stream IDs exposed by an SSD is limited to 8 or 16.
 
 %Figure~\ref{fig:architecture} shows the overall architecture of PCStream.  When
@@ -85,7 +85,9 @@ Searching the entire process stack would require long CPU time. Therefore, the
 search process is finished when it finds a certain number of return addresses
 in the stack. Currently, this threshold value is set to 5.  In our experiments
 with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
-write system call, on average, so its overhead is not so huge.  
+write system call, on average, so its overhead is not so huge.
+Figure~\ref{fig:getpc}(b) illustrates how PC computation works in PCStream in
+detail.
 
 \begin{figure}[t]
 	\centering
@@ -110,56 +112,62 @@ the data is removed, however, we should be able to monitor TRIM commands from a
 file system that invalidate previously written data.  To keep track of the
 lifetimes of data written by specific PCs, the PC lifetime analyzer maintains a
 list of LBAs for individual PCs when the LBAs are being written to the storage.
-When TRIM commands come for those LBAs, the lifetime analyzer is able to get
-the exact lifetime of those data. In append-only applications, a large chunk of
-data are written and invalidated together (e.g., \textcolor{red}{64 MB} in
-RocksDB), thus LBAs belonging to the same PC tend to have the similar lifetime.
-
+Upon receiving TRIM commands for those LBAs, the lifetime analyzer is able to
+get the exact lifetime of those data. In append-only applications, a large
+chunk of data are written and invalidated together (e.g., \textcolor{red}{64
+MB} in RocksDB), and thus LBAs belonging to the same PC tend to have the
+similar lifetime. Note that, the same PC generates multiple data streams with
+different lifetimes, so the average of them is used as PC's expected lifetime.
 
 
 \vspace{-5pt}
-\subsection{Stream Allocation Policy}
-In this paper, we focus on to show the feasibility of the PC-based approach, 
-so we limits several factors of PCStream.
-The number of application programs is limited to one, 
-and we assume the SSD can support enough number of streams
-to have 1:1 mapping policy for PCs and streams.
-Since every PC is mapped to stream under the 1:1 mapping, 
-we do not need to analyze the lifetime of PCs 
-or dynamically allocate streams.
-The implementation of those modules 
-is left as a future work. 
+%\subsection{Stream Allocation Policy}
+\subsection{Mapping PCs to SSD stream}
+After getting the lifetimes of PCs, our next step is to map a group of PCs with
+similar lifetimes to an SSD stream. As pointed out before, this is because of a
+limited number of stream IDs offered by an SSD. For example, Samsung's
+\textcolor{red}{XXX} and \textcolor{red}{YYY} SSD support only 8 and 16
+streams, respectively. To properly group multiple PCs, the PC-to-stream mapper
+employs a simple 1D clustering algorithm, which is a sort of the Jenks
+optimization method~\cite{}.  \textcolor{red}{As illustrated in
+Figure~\ref{todo} (TODO: I'm not sure if it is necessary to add an additional
+figure because the mapping policy is rather straightforward)}, for all the PCs,
+the mapper internally builds a 1D array sorted by PCs' lifetimes.  Given an
+available SSD stream number, it runs the clustering algorithm and determines
+the best arrangement of PCs into different classes.
 
-For example, dynamic m:n mapping algorithm is
-needed for responding to changes of
-the application layer (increased number of PCs)
-or the device layer (decreased number of streams).
-For the PC clustering, we need to define the lifetime similarity of two PCs
-and develop a clustering algorithm.
-Also, we will develop the data structure
-for the Lifetime Monitor to efficiently find a corresponding PC 
-based on the discarded LBA because the deletion does not
-make the write program context.
+In order to adapt to changing workloads, the PC-to-stream mapper should perform
+reclustering regularly. Since the number of PCs created by applications is not
+limited, the clustering algorithm must be efficient enough quickly to handle a
+large number of items. Since our goal in this work is to confirm the
+feasibility of using the program context for multi-streamed SSDs, we leave
+those issues as one of our future works.
+
+
+%In this paper, we focus on to show the feasibility of the PC-based approach, 
+%so we limits several factors of PCStream.
+%The number of application programs is limited to one, 
+%and we assume the SSD can support enough number of streams
+%to have 1:1 mapping policy for PCs and streams.
+%Since every PC is mapped to stream under the 1:1 mapping, 
+%we do not need to analyze the lifetime of PCs 
+%or dynamically allocate streams.
+%The implementation of those modules 
+%is left as a future work. 
+%
+%For example, dynamic m:n mapping algorithm is
+%needed for responding to changes of
+%the application layer (increased number of PCs)
+%or the device layer (decreased number of streams).
+%For the PC clustering, we need to define the lifetime similarity of two PCs
+%and develop a clustering algorithm.
+%Also, we will develop the data structure
+%for the Lifetime Monitor to efficiently find a corresponding PC 
+%based on the discarded LBA because the deletion does not
+%make the write program context.
 
 \vspace{-5pt}
 \subsection{Stream Refinement}
-According to our observations, the lifetime of data is similar 
-for contexts with simple operations such as log, as shown in section 2, 
-but some contexts generate various lifetime data.
-The compaction behavior of RocksDB belongs to a such context.
-Compaction moves the flushed data to the different levels
-of the LSM-tree~\cite{RocksDB}, 
-so the data generated in one compaction context has 
-different life characteristics depending on the target level.
-Like RocksDB, LSM-tree-based DBs tend to have a longer 
-data lifetime at lower levels~\cite{Level}.
-Since the allocated capacity increases as the level goes down, 
-the cycle of compaction, which deletes files, is long at low level.
-In order to see the difference in the lifetime of each compaction target level,
-we modified the RocksDB code to distinguish files according to the compaction level.
-Figure~\ref{fig:compaction} shows the lifetime distribution of 
-different compaction level data and compaction context data.
-
 \begin{figure}[!t]
 \centering
 \hspace{1pt}
@@ -172,41 +180,47 @@ different compaction level data and compaction context data.
 \vspace{-10pt}
 \caption{The lifetime distribution of compaction context.} 
 \label{fig:compaction}
-\vspace{-25pt}
+\vspace{-15pt}
 \end{figure}
 
-Level 2 data in Figure~\ref{fig:compaction}(a) and 
-level 3 data in Figure~\ref{fig:compaction}(b) seem to have 
-a limited lifetime due to the frequent compaction.
-On the other hand, because of the long compaction period 
-due to the largest space of LSM-tree's lowest level, 
-the lifetime is longer than other levels as shown in ~\ref{fig:compaction}(c).
-Also, since the target file of the compaction is determined 
-by the range of key values of the file~\cite{RocksDB}, 
-the previously created file can be deleted 
-by participating in the compaction. 
-Therefore, the data stored at the lowest level has a very wide lifetime.
-However, since all of these data are created in the same context, 
-PC 4 can not distinguish any data of the compaction as shown in ~\ref{fig:compaction}(d).
-In order to overcome the limitation of PC-based data classification,
-we suggest a new optimization technique for multi-stream SSD 
-rather than asking application to differentiate the compaction function according to its level.
+According to our observations, the lifetime of data is similar for contexts
+with simple operations such as log, as shown in section 2, but some contexts
+generate various lifetime data.  The compaction behavior of RocksDB belongs to
+a such context.  Compaction moves the flushed data to the different levels of
+the LSM-tree~\cite{RocksDB}, so the data generated in one compaction context
+has different life characteristics depending on the target level.  Like
+RocksDB, LSM-tree-based DBs tend to have a longer data lifetime at lower
+levels~\cite{Level}.  Since the allocated capacity increases as the level goes
+down, the cycle of compaction, which deletes files, is long at low level.  In
+order to see the difference in the lifetime of each compaction target level, we
+modified the RocksDB code to distinguish files according to the compaction
+level.  Figure~\ref{fig:compaction} shows the lifetime distribution of
+different compaction level data and compaction context data.
 
-Basically, the reason for distinguishing data of a similar lifetime is 
-to match the timing of data invalidation. 
-If long-lived data is gathered together excluding short-lived data, 
-there would be no significant impact on WAF. 
-So if we store the long-lived data separately even after 
-the data is written to the wrong stream, 
-we can greatly reduce the side effects of the limitation. 
-Therefore, we consider a valid page copied during the GC 
-as a misplaced long-lived data 
-and allocate a separate substream to accommodate it. 
-For example, if a PC with various lifetimes is assigned to stream A, 
-we define stream A' as a substream of A and 
-move the valid page of stream A to stream A' during GC. 
-This prevents long lifetime data of stream A from being repeatedly copied 
-by GC.
+Level 2 data in Figure~\ref{fig:compaction}(a) and level 3 data in
+Figure~\ref{fig:compaction}(b) seem to have a limited lifetime due to the
+frequent compaction.  On the other hand, because of the long compaction period
+due to the largest space of LSM-tree's lowest level, the lifetime is longer
+than other levels as shown in ~\ref{fig:compaction}(c).  Also, since the target
+file of the compaction is determined by the range of key values of the
+file~\cite{RocksDB}, the previously created file can be deleted by
+participating in the compaction.  Therefore, the data stored at the lowest
+level has a very wide lifetime.  However, since all of these data are created
+in the same context, PC 4 can not distinguish any data of the compaction as
+shown in ~\ref{fig:compaction}(d).  In order to overcome the limitation of
+PC-based data classification, we suggest a new optimization technique for
+multi-stream SSD rather than asking application to differentiate the compaction
+function according to its level.
 
-
+Basically, the reason for distinguishing data of a similar lifetime is to match
+the timing of data invalidation.  If long-lived data is gathered together
+excluding short-lived data, there would be no significant impact on WAF.  So if
+we store the long-lived data separately even after the data is written to the
+wrong stream, we can greatly reduce the side effects of the limitation.
+Therefore, we consider a valid page copied during the GC as a misplaced
+long-lived data and allocate a separate substream to accommodate it.  For
+example, if a PC with various lifetimes is assigned to stream A, we define
+stream A' as a substream of A and move the valid page of stream A to stream A'
+during GC.  This prevents long lifetime data of stream A from being repeatedly
+copied by GC.
 
