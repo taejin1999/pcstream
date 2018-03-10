@@ -9,19 +9,19 @@ PCStream.
 %\subsection{Design overview}
 
 Figure~\ref{fig:architecture} shows the overall architecture of PCStream, which
-is composed of a PC extractor, a lifetime analyzer, and a PC-to-stream mapper.
-The PC extractor is implemented in the Linux kernel as part of a system call
-handler: its responsibility is for intercepting write-related system calls
-(e.g., \texttt{write()}, \texttt{writev()}, and so on) and extracting a PC
-value.  This enables us to keep track of PC values corresponding to new write
-streams from a specific module of an application. An obtained PC value is
-forwarded to the lifetime analyzer that estimates expected lifetimes of data
-belonging to a given PC. To know when data is deleted or removed, the lifetime
-analyzer also intercepts TRIM requests from a file system.  Based on the
-lifetime information, the PC-to-stream mapper clusters PC values with similar
-lifetimes and maps them together to the same stream ID.  This mapping is
-required because, while the number of PCs is unlimited, the number of stream
-IDs exposed by an SSD is limited to 8 or 16.
+is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer}, and a
+\textit{PC-to-stream mapper}.  The PC extractor is implemented in the Linux
+kernel as part of a system call handler: its responsibility is for intercepting
+write-related system calls (e.g., \texttt{write()}, \texttt{writev()}, and so
+on) and extracting a PC value.  This enables us to keep track of PC values
+corresponding to new write streams from a specific module of an application. An
+obtained PC value is forwarded to the lifetime analyzer that estimates expected
+lifetimes of data belonging to a given PC. To know when data is deleted or
+removed, the lifetime analyzer also intercepts TRIM requests from a file
+system.  Based on the lifetime information, the PC-to-stream mapper clusters PC
+values with similar lifetimes and maps them together to the same stream ID.
+This mapping is required because, while the number of PCs is unlimited, the
+number of stream IDs exposed by an SSD is limited to 8 or 16.
 
 %Figure~\ref{fig:architecture} shows the overall architecture of PCStream.  When
 %the write system call handler is called from the user process, it passes the
@@ -45,11 +45,13 @@ IDs exposed by an SSD is limited to 8 or 16.
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.8\linewidth]{figure/architecture2}
-	\caption{An overall architecture of {\sf PCStream}}
+	\caption{An overall architecture of {\sf PCStream}
+	\textcolor{red}{(TODO: redraw the figure based on the revised text)}}
 	\label{fig:architecture}
-	%\vspace{-20pt}
+	\vspace{-15pt}
 \end{figure}
 
+\vspace{-5pt}
 \subsection{Automatic PC computation}
 As mentioned earlier, a PC value is defined as the sum of the program counter
 values along the execution path of the function call.  A function call involves
@@ -82,18 +84,40 @@ address space layout.
 Searching the entire process stack would require long CPU time. Therefore, the
 search process is finished when it finds a certain number of return addresses
 in the stack. Currently, this threshold value is set to 5.  In our experiments
-with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec, so
-its overhead is not so huge.  
+with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
+write system call, on average, so its overhead is not so huge.  
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{figure/getpc}
 	\vspace{-10pt}
-	\caption{An automatic PC extraction method under compiler optimizations.}
+	\caption{An automatic PC extraction method under compiler optimizations.
+	\textcolor{red}{(TODO: redraw the figure based on the revised text)}
+	}
 	\label{fig:getpc}
-	\vspace{-20pt}
+	\vspace{-15pt}
 \end{figure}
 
+
+\vspace{-5pt}
+\subsection{PC lifetime prediction}
+
+The prediction of PC lifetimes is rather complicated. The lifetime of
+append-only data is defined as from when they are appended to the storage to
+when they are deleted by an application. The time at which data belonging to a
+certain PC is written can be obtained through the PC extractor. To know when
+the data is removed, however, we should be able to monitor TRIM commands from a
+file system that invalidate previously written data.  To keep track of the
+lifetimes of data written by specific PCs, the PC lifetime analyzer maintains a
+list of LBAs for individual PCs when the LBAs are being written to the storage.
+When TRIM commands come for those LBAs, the lifetime analyzer is able to get
+the exact lifetime of those data. In append-only applications, a large chunk of
+data are written and invalidated together (e.g., \textcolor{red}{64 MB} in
+RocksDB), thus LBAs belonging to the same PC tend to have the similar lifetime.
+
+
+
+\vspace{-5pt}
 \subsection{Stream Allocation Policy}
 In this paper, we focus on to show the feasibility of the PC-based approach, 
 so we limits several factors of PCStream.
@@ -117,6 +141,7 @@ for the Lifetime Monitor to efficiently find a corresponding PC
 based on the discarded LBA because the deletion does not
 make the write program context.
 
+\vspace{-5pt}
 \subsection{Stream Refinement}
 According to our observations, the lifetime of data is similar 
 for contexts with simple operations such as log, as shown in section 2, 
