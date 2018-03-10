@@ -33,14 +33,14 @@ Seoul National University
 {\rm Sangwook Shane Hahn}\\
 Seoul National University
 \and 
+{\rm Sungjin Lee}\\
+DGIST
+\and 
 {\rm Jooyoung Hwang} \\
 Samsung Electronics
 \and 
 {\rm Jongyoul Lee} \\
 Samsung Electronics
-\and 
-{\rm Sungjin Lee}\\
-DGIST
 \and 
 {\rm Jihong Kim} \\
 Seoul National University
@@ -61,12 +61,11 @@ When data mapped to the same
 stream show large differences in their lifetimes, {\sf PCStream}
 moves the long-lived data of the current stream to 
 its substream during garbage collection.
-Our experimental results show that {\sf PCStream} can reduce the
-garbage collection overhead as much as manual stream
-management techniques while no code modification is necessary.
-For a RocksDB benchmark, {\sf PCStream} improved WAF by 40\% over 
-the existing automatic technique.
-
+Our experimental results 
+on real SSDs
+show that {\sf PCStream} 
+outperforms manual stream management techniques by XXX\% 
+while no code modification is necessary.
 
 \input{introduction}
 \input{motivation}

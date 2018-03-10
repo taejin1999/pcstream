@@ -12,20 +12,26 @@ can significantly improve both the performance and lifetime of
 flash-based SSDs~\cite{MultiStream, FStream, AutoStream, Level}.
 
 In order to achieve high performance on multi-streamed SSDs, data with similar 
-future update times~\cite{PCHa}
+{\it future} update times~\cite{PCHa}
 should be allocated 
 to the same stream, so that the copy cost of garbage collection can be minimized.
 However, since it is difficult to know the future update times {\it a priori} when they are written,
-stream allocation decisions are often {\it manually} made for a {\it specific} SSD 
-at the application level~\cite{MultiStream} or at the file system level~\cite{FStream}, 
-thus making it difficult for multi-streamed SSDs to be widely used in practice.  
-In this paper, our long-term goal is to develop a general technique for managing streams 
-for {\it any} multi-streamed SSD\footnote{The main difference among different multi-streamed 
+stream allocation decisions are often {\it manually} made by programmers based on their expertise (or experience) 
+on the application~\cite{MultiStream} or the file system~\cite{FStream}.  
+Furthermore, these manual techniques assume a fixed number of 
+streams (i.e., a specific SSD).   
+When an SSD has a smaller number of streams, stream allocation decisions should be changed.
+In this paper, our goal is to develop 
+a {\it fully automatic} technique for managing streams 
+which is applicable for {\it any} multi-streamed SSD
+\footnote{The main difference among different multi-streamed 
 SSDs is the maximum number of streams supported.  
-For example, XXX has Y streams while ZZZ has A streams.} in a {\it fully-automatic} fashion. 
+For example, the SSD used in FStream~\cite{FStream} has 9 streams 
+while the SSD used in AutoStream~\cite{AutoStream} has 16 streams.}.
 
-To the best of our knowledge, AutoStream~\cite{AutoStream} is the only automatic technique 
-for managing streams without additional manual work.  
+To the best of our knowledge, AutoStream~\cite{AutoStream} is the only automatic 
+stream management technique
+without additional manual work.  
 However, since AutoStream predicts data lifetimes using the update frequency 
 of the logical block address (LBA), it does not work well with modern append-only workloads 
 such as RocksDB~\cite{RocksDB} or Cassandra~\cite{Cassandra}.  
@@ -36,7 +42,7 @@ from the LBA characteristics (such as access frequency or access patterns).
 For example, as shown in Figure~\ref{fig:lba_lifetime}(b), 
 data written to a fixed LBA range over times in RocksDB 
 show widely varying data lifetimes, 
-thus making it very difficult to allocate streams based on LBA characteristics.
+thus making it difficult to allocate streams based on LBA characteristics.
 
 In this paper, we propose a fully automatic stream management technique, called {\sf PCStream}, 
 for multi-streamed SSDs based on program contexts (PCs).
@@ -44,35 +50,38 @@ Since the key motivation behind {\sf PCStream} was
 that data lifetimes should be estimated at a higher abstraction level than LBAs, 
 {\sf PCStream} employed a write program context\footnote{Since we are interested in write-related 
 system calls such as write() and writev() in the Linux kernel, 
-we call their related program contexts as {\it write program contexts.}}  
+we call their related program contexts as 
+{\it write program contexts.} In the rest of the paper, we use 
+{\it program contexts} interchangeably with {\it write program contexts}.}  
 as a main unit for managing streams.   
 A program context~\cite{PC}, which represents a particular execution phase of a program, 
 is known to be an effective hint in separating data with different lifetimes~\cite{PCHa}.  
 (That is, the lifetime of data written by the same program context tends to be very similar.)   
-PCStream maps an identified program context to a stream.  
-Since program contexts can be automatically computed during the run time, 
-PCStream does not need any manual work.   
-In order to handle append-only workloads as well, 
-PCStream extended the definition of the data lifetime to include the TRIM command~\cite{TRIM}.
+{\sf PCStream} automatically maps an identified program context to a stream.  
+Since program contexts can be computed during the run time, 
+{\sf PCStream} does not need any manual work.   
+In order to handle append-only workloads, 
+{\sf PCStream} extended the definition of the data lifetime 
+so that the effect of the TRIM command~\cite{10} can be accounted for. 
 
-While {\sf PCStream} works efficiently for most workloads, the lifetime of data written from
-a single program context may be quite fluctuating, thus making a pure PC-based approach less effective.   
+Although most program contexts show that their data lifetimes are 
+distributed with small variances, we observed a few outliers 
+whose data lifetimes have rather large variances.
 In {\sf PCStream}, 
-when such a PC {\it pID} is observed (which was mapped to a stream {\it sID}, 
-we further separate data written by {\it pID}
-to a substream {\it subID} of {\it sID} during garbage collection 
-so that data with a long lifetime cannot be mixed with data with a short lifetime within the stream {\it sID}.
+when such a PC {\it pID} is observed (which was mapped to a stream {\it sID}), 
+the long-lived data of {\it pID} are moved to the substream of {\it sID}
+during garbage collection.  
+The substream prevents the long-lived data of the stream {\it sID} 
+from being mixed with future short-lived data of the stream {\it sID}.
 
-In order to evaluate the effectiveness of PCStream, 
-we have implemented the PCStream at the system call layer
-and the block I/O layer in the Linux kernel.
-We performed experiments using RocksDB with 
-various scenarios.
-Our experimental results show that {\sf PCStream} can reduce the
-garbage collection overhead as much as manual stream
-management techniques while no code modification is necessary.
-For a RocksDB benchmark, {\sf PCStream} improved WAF by 40\% over 
-the existing automatic technique.
+In order to evaluate the effectiveness of PCStream, we have implemented PCStream 
+in the Linux kernel (v. 4.5) and measured write amplification factor (WAF) values 
+using RocksDB on a Samsung PM963 SSD (which have 8 streams).  
+
+Our experimental results show that {\sf PCStream} is quite effective.  
+It reduced the average WAF by XXX\% over AutoStream.  
+Furthermore, PCStream outperformed {\it even} the existing manual technique~\cite{MultiStream} 
+by reducing the average WAF by XXX\%.
 
 The rest of this paper is organized as follows. 
 We explain the key motivations behind {\sf PCStream} in Section 2. 
