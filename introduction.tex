@@ -35,7 +35,7 @@ Unlike conventional update workloads where data written to the same LBAs
 often show strong update locality, 
 append-only workloads make it impossible to predict data lifetimes 
 from LBA characteristics (such as access frequency or access patterns).  
-For example, as shown in Figure~\ref{fig:lba_lifetime}(b), 
+For example, as shown in Fig.~\ref{fig:lba_lifetime}(b), 
 data written to a fixed LBA range over times in RocksDB 
 show widely varying data lifetimes, 
 thus making it difficult to allocate streams based on LBA characteristics.
@@ -80,7 +80,7 @@ by reducing the average WAF by XXX\%.}
 The rest of this paper is organized as follows. 
 We explain the key motivations behind {\sf PCStream} in Section 2. 
 Section 3 describes 
-the design and implementation of {\sf PCStream}.
+the design of {\sf PCStream}.
 The experimental results are shown in Section 4. 
 Finally, we conclude in Section 5 with a summary and future work. 
 

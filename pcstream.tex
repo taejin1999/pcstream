@@ -15,7 +15,7 @@ an SSD. Finally, we introduce an additional technique that further optimizes
 	\label{fig:architecture}
 \end{figure}
 
-Figure~\ref{fig:architecture} shows the overall architecture of {\sf PCStream}, which
+Fig.~\ref{fig:architecture} shows the overall architecture of {\sf PCStream}, which
 is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer}, and a
 \textit{PC-to-stream mapper}.  The PC extractor is implemented in the Linux
 kernel as part of a system call handler. Its responsibility is for intercepting
@@ -43,7 +43,7 @@ which  is used as a return location to keep executing a caller function when a
 callee function is finished.  In general, by using a frame register, we are
 able to back-track the stack frames of the process and selectively collect
 return addresses, which are then used for computing a PC value. For example,
-Figure~\ref{fig:getpc}(a) illustrates how a PC value is obtained by
+Fig.~\ref{fig:getpc}(a) illustrates how a PC value is obtained by
 back-tracking the process stack.
 
 Unfortunately, C/C++ compilers (e.g., GNU GCC) often optimize an output code so
@@ -69,7 +69,7 @@ search process is finished when it finds a certain number of return addresses
 in the stack. Currently, this threshold value is set to 5.  In our experiments
 with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
 write system call, on average, so its overhead is not so huge.
-Figure~\ref{fig:getpc}(b) illustrates how PC computation works in {\sf PCStream} in
+Fig.~\ref{fig:getpc}(b) illustrates how PC computation works in {\sf PCStream} in
 detail.
 
 \begin{figure}[t]
@@ -156,8 +156,8 @@ in lower levels, thereby having much shorter lifetimes.
 
 Unfortunately, the compaction is done by the same module for all the levels.
 The program context is thus unable to distinguish write streams from different
-levels. Figure~\ref{fig:compaction}(a) shows the lifetimes of data written by
-the compaction module that has the same PC.  Figures~\ref{fig:compaction}(b),
+levels. Fig.~\ref{fig:compaction}(a) shows the lifetimes of data written by
+the compaction module that has the same PC.  Figs.~\ref{fig:compaction}(b),
 (c), and (d) illustrate the lifetimes of data when we manually assign different
 PC numbers to different levels by modifying the code.  As expected, data from
 the L1 are likely to have the shortest lifetime, while the L4 has generally
