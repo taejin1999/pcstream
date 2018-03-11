@@ -11,19 +11,19 @@ the correlation between LBAs and the lifetime of data under append-only
 workloads, we analyzed the write pattern of RocksDB~\cite{RocksDB}, which is a
 popular key-value store based on the LSM-tree algorithm~\cite{LSM}.
 
-Figure~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
+Fig.~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
 according to LBAs. Here, the lifetime of data is defined to be 
 the number of write requests between when the data is written 
 and when the data is invalidated by an overwrite or a TRIM command. 
 %an elapsed time (unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
 %invalidated by an overwrite or a TRIM command. 
 As shown in
-Figure~\ref{fig:lba_lifetime}(a), there is no strong correlation between the
+Fig.~\ref{fig:lba_lifetime}(a), there is no strong correlation between the
 lifetime and LBAs -- all the data have very different lifetimes, regardless of
 their LBA numbers. We also analyzed 
-if the lifetimes of LBAs change under some predictable patterns over times 
+how the lifetimes of LBAs change under some predictable patterns over times 
 although the overall lifetime distribution of LBAs shows large variances.
-Figure 1(b) shows a scatter plot of data lifetimes over the logical time 
+Fig.~\ref{fig:lba_lifetime}(a) shows a scatter plot of data lifetimes over the logical time 
 (in the number of write requests) for a 1-MB chunk with 2048 LBAs. 
 Over the logical time, the lifetime of data written to the chunk 
 varies in an unpredictable fashion.  
@@ -33,10 +33,11 @@ followed by a rapid drop around the logical time 600.
 
 Our investigation strongly suggests that  under append-only
 workloads, LBAs couldn't be a useful 
-indicator that can be used to decide
+indicator to decide
 the hotness or lifetime of data.
 
 \begin{figure}[t]
+	\vspace{-10pt}
 	\centering
 	\subfloat[Lifetime patterns over LBAs]{\includegraphics[width=0.25\textwidth]{figure/lba_lifetime2}}  % data from 0/03031641
 	\subfloat[Lifetime patterns over time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk2}}
@@ -112,13 +113,13 @@ conducted a series of experiments using RocksDB, comparing the accuracy of
 lifetime prediction by two different methods: 1) when the type of data streams
 is manually identified by modifying the code (\texttt{manual}) and 2) when the
 stream type is automatically tagged by the program context
-(\texttt{automatic}).  Figure~\ref{fig:types_and_PCs} compares the lifetime
+(\texttt{automatic}).  Fig.~\ref{fig:types_and_PCs} compares the lifetime
 distributions of data that are separated by \texttt{manual} and
-\texttt{automatic}.  Figures~\ref{fig:types_and_PCs}(a) and (b) represent how
+\texttt{automatic}.  Figs.~\ref{fig:types_and_PCs}(a) and (b) represent how
 well the two methods identify log data written by
 RocksDB.  As mentioned earlier, log data are short-lived, and the
 \texttt{automatic} method with the program context shows high accuracy
-comparable to \texttt{manual}. Similarly, Figures~\ref{fig:types_and_PCs}(c)
+comparable to \texttt{manual}. Similarly, Figs.~\ref{fig:types_and_PCs}(c)
 and (d) shows the accuracy of identifying data streams written by the flush
 module of RocksDB.  As expected, these two graphs have the similar lifetime
 patterns, which proves that the program context can be a good lifetime hint.
