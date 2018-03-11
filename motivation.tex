@@ -18,7 +18,8 @@ in RocksDB~\cite{RocksDB} (which is a popular key value store
 based on the append-only LSB-tree algorithm~\cite{LSM}).  
 As shown in Fig.~\ref{fig:lba_lifetime}(a), 
 there exists no strong correlation between the LBAs and lifetimes in RocksDB.  
-\textcolor{blue}{This is in sharp contrast with a scatter plot for update workloads.}
+\textcolor{blue}{This is in sharp contrast with a scatter plot for update workloads.
+}
 
 We also analyzed 
 how the lifetimes of LBAs change under some predictable patterns over times 
@@ -46,21 +47,23 @@ the hotness or lifetime of data.
 	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
 	\vspace{-10pt}
 	\caption{
-		Data lifetime distributions over varying LBAs and logical times.
-		\textcolor{red}{(TODO:) it would be good to include same graphs with
-		in-place update workloads;}}
+		Data lifetime distributions over varying LBAs and logical times.}
 		\label{fig:lba_lifetime}
 	\vspace{-15pt}
 \end{figure}
 
 \vspace{-5pt}
 \subsection{Program context as a lifetime predictor}
-In order to separate data with different lifetimes, the key requirement is to devise 
-a means with which {\it different I/O contexts} can be effectively distinguished.  
-For example, LBAs played such a role fairly well for update workloads.  
-However, they do not work well for append-only workloads because 
-they do not convey the context of I/O operations any more.  
+In developing {\sf PCStream},  our key insight was that in most applications 
+(regardless of their I/O workload characteristics), 
+1) there are a few dominant I/O activities from an application 
+and 2) each dominant I/O activity tends to have unique data lifetime patterns.   
+In order to distinguish data by their lifetimes, therefore, 
+it is important to effectively distinguish dominant I/O activities from each other.  
+For example, in update workloads, 
+LBAs alone were effective in separating dominant I/O activities.  
 
+\begin{comment}
 In developing PCStream, we started from a simple question: 
 how can we extract I/O context from an application? 
 For example, in RocksDB, logging, flushing and compaction can be regarded
@@ -81,19 +84,23 @@ solution~\cite{MultiStream} to realizing this is manually modify an application
 code so that each module assigns a unique stream ID to data it generates.
 However, owing to considerable implementation efforts required to modify
 individual applications, this approach is not widely used in practice.
+\end{comment}
 
-In this paper, we claim that a program context (PC) is a useful tool that delivers
-the information of data lifetimes to the storage side without modifying
-application code manually. A PC is calculated at runtime by
-summing the values of program counters that are identified along function-call
-paths of an application. Logging, flushing, and compaction are invoked through
-different function-call paths. Thus, by leveraging PCs, we are
-able to identify software modules that generate specific write streams. Note
-that using PCs to identify characteristics of data is not new.
-Ha \textit{et al.} proposed a way of separating hot-cold data by referring to
-PCs~\cite{PCHa}. This work, however, was not designed for
-append-only applications and didn't take into account the use of a multi-stream
-feature of a modern SSD.
+In this paper, 
+we argue that a program context is a natural and effective solution 
+for distinguishing dominant I/O activities.  
+Since a PC represents an execution path of an application which invokes 
+write-related system functions such as write() and writev() in the Linux kernel,  
+we represent the PC by summing program counter values of all the functions 
+along the execution path of the PC.   
+In RocksDB, for example, dominant I/O activities include logging, 
+flushing and compaction.  
+Since they are invoked through different function-call paths, 
+we can easily identify the dominant I/O activities of RocksDB using PCs. 
+Note that using the program context to distinguish data lifetimes is not new.  
+Ha et al. proposed a data separation technique based on the program context~\cite{PCHa}.   
+However, their work was not designed for append-only applications and didn’t target 
+for a multi-stream feature of a modern SSD.
 
 \begin{figure}[!t]
 \centering
@@ -110,8 +117,8 @@ feature of a modern SSD.
 \vspace{-15pt}
 \end{figure}
 
-In order to confirm our hypothesis that PCs could provide enough information to
-recognize the lifetimes of data based on detailed application behaviors, we
+In order to validate our hypothesis  that PCs can be used for predicting 
+data lifetimes, we
 conducted experiments using RocksDB, comparing the accuracy of lifetime
 prediction of two different methods: 1) when the type of data streams is
 manually identified by modifying the code (\texttt{manual}) and 2) when the
@@ -119,11 +126,11 @@ stream type is automatically tagged by PCs (\texttt{automatic}).
 Fig.~\ref{fig:types_and_PCs} compares the lifetime distributions of data
 separated by \texttt{manual} and \texttt{automatic}.
 Figs.~\ref{fig:types_and_PCs}(a) and (b) represent how well the two methods
-identify log data written by RocksDB. The \texttt{automatic} method with PCs
+identify log data written by RocksDB. 
+For short-lived log data, the \texttt{automatic} method with PCs
 shows high accuracy to detect log data with short lifetimes, which is
 comparable to \texttt{manual}. Similarly, Figs.~\ref{fig:types_and_PCs}(c) and
-(d) shows the accuracy of identifying data written by the flush module of
+(d) show the accuracy of identifying data written by the flush module of
 RocksDB.  As expected, these two graphs have the similar lifetime patterns,
-which proves that PCs can be a good lifetime hint.
-
+which indicates that PCs are valuable hints for managing data lifetimes.
 
