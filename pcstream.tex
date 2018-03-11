@@ -1,19 +1,31 @@
 \section{Design of PCStream}
 In this section, we describe in detail the proposed automatic stream management
-technique, \textit{PCStream}.  We first explain a mechanism that automatically
+technique, {\sf PCStream}.  We first explain a mechanism that automatically
 obtains the program context (PC) value at runtime, and then describe how
 multiple write streams with different PC values are combined and delivered to
 an SSD. Finally, we introduce an additional technique that further optimizes
-PCStream.
+{\sf PCStream}.
 
-Figure~\ref{fig:architecture} shows the overall architecture of PCStream, which
+\begin{figure}[b]
+	\vspace{-15pt}
+	\centering
+	\includegraphics[width=0.8\linewidth]{figure/architecture3}
+	\vspace{-10pt}
+	\caption{An overall architecture of {\sf PCStream}}
+	\label{fig:architecture}
+\end{figure}
+
+Figure~\ref{fig:architecture} shows the overall architecture of {\sf PCStream}, which
 is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer}, and a
 \textit{PC-to-stream mapper}.  The PC extractor is implemented in the Linux
 kernel as part of a system call handler. Its responsibility is for intercepting
 write-related system calls (e.g., \texttt{write()}, \texttt{writev()}, and so
 on) and extracting a PC value.  This enables us to keep track of PC values
-corresponding to new write streams from a specific module of an application. An
-obtained PC value is forwarded to the lifetime analyzer that estimates expected
+corresponding to new write streams from a specific module of an application. 
+The obtained PC value is stored in the inode of the file written by the write system call.
+Before the write request of the file is issued to the device in the block layer, 
+PC value is referred 
+by the lifetime analyzer that estimates expected
 lifetimes of data belonging to a given PC. To know when data is deleted or
 removed, the lifetime analyzer also intercepts TRIM requests from a file
 system.  Based on the lifetime information, the PC-to-stream mapper clusters PC
@@ -21,14 +33,6 @@ values with similar lifetimes and maps them together to the same stream ID.
 This mapping is required because, while the number of PCs created by applications is unlimited, the
 number of stream IDs exposed by an SSD is limited to 8 or 16.
 
-\begin{figure}[t]
-	\centering
-	\includegraphics[width=0.8\linewidth]{figure/architecture2}
-	\caption{An overall architecture of {\sf PCStream}
-	\textcolor{red}{(TODO: redraw the figure based on the revised text)}}
-	\label{fig:architecture}
-	\vspace{-15pt}
-\end{figure}
 
 \vspace{-5pt}
 \subsection{Automatic PC computation}
@@ -51,7 +55,7 @@ every word in the process stack and find out ones that point to the code
 segment of the process's virtual address.  Modern OSes divide the process's
 virtual address into segments for their purposes, and thus program instructions
 (code) are stored in a specific range of the virtual address space (e.g.,
-\textcolor{red}{\texttt{0xXXXXh}} to \textcolor{red}{\texttt{0xYYYYh}} in the
+{\texttt{0x400000h}} to {\texttt{0x40c000h}} in the
 Linux).  If there are words that hold a value pointing to somewhere in the code
 segment, they are highly likely to be one of the return values.  
 \begin{comment} % DO NO REMOVE
@@ -65,16 +69,16 @@ search process is finished when it finds a certain number of return addresses
 in the stack. Currently, this threshold value is set to 5.  In our experiments
 with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
 write system call, on average, so its overhead is not so huge.
-Figure~\ref{fig:getpc}(b) illustrates how PC computation works in PCStream in
+Figure~\ref{fig:getpc}(b) illustrates how PC computation works in {\sf PCStream} in
 detail.
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=1\linewidth]{figure/getpc}
+	\subfloat[with frame pointer]{\includegraphics[width=0.21\textwidth]{figure/getpc_1}}  
+	%\hspace{10pt}
+	\subfloat[without frame pointer]{\includegraphics[width=0.23\textwidth]{figure/getpc_2}}
 	\vspace{-10pt}
-	\caption{An automatic PC extraction method under compiler optimizations.
-	\textcolor{red}{(TODO: redraw the figure based on the revised text)}
-	}
+	\caption{PC extractions with or without the frame pointer.}
 	\label{fig:getpc}
 	\vspace{-15pt}
 \end{figure}
@@ -92,8 +96,8 @@ lifetimes of data written by specific PCs, the PC lifetime analyzer maintains a
 list of LBAs for individual PCs when the LBAs are being written to the storage.
 Upon receiving TRIM commands for those LBAs, the lifetime analyzer is able to
 get the exact lifetime of those data. In append-only applications, a large
-chunk of data are written and invalidated together (e.g., \textcolor{red}{64
-MB} in RocksDB), and thus LBAs belonging to the same PC tend to have the
+chunk of data are written and invalidated together (e.g., 64 MB in RocksDB), 
+and thus LBAs belonging to the same PC tend to have the
 similar lifetime. Note that, the same PC generates multiple data streams with
 different lifetimes, so the average of them is used as PC's expected lifetime.
 
@@ -102,11 +106,11 @@ different lifetimes, so the average of them is used as PC's expected lifetime.
 \subsection{Mapping PCs to SSD stream}
 After getting the lifetimes of PCs, our next step is to map a group of PCs with
 similar lifetimes to an SSD stream. As pointed out before, this is because of a
-limited number of stream IDs offered by an SSD. For example, Samsung's
-\textcolor{red}{XXX} and \textcolor{red}{YYY} SSD support only 8 and 16
+limited number of stream IDs offered by an SSD. For example, SSDs used in 
+FStream~\cite{FStream} and AutoStream~\cite{AutoStream} support only 9 and 16
 streams, respectively. To properly group multiple PCs, the PC-to-stream mapper
 employs a simple 1D clustering algorithm, which is a sort of like the Jenks
-optimization method~\cite{}.  For all the PCs, the mapper internally builds a
+optimization method~\cite{Jenks}.  For all the PCs, the mapper internally builds a
 1D array sorted by PCs' lifetimes.  Given an available SSD stream number, it
 runs the clustering algorithm and determines the best arrangement of PCs into
 different classes.
@@ -124,12 +128,12 @@ we leave those issues as one of our future works.
 \begin{figure}[!t]
 \centering
 \hspace{1pt}
+\subfloat[PC ID: \#4]{\includegraphics[width=0.23\textwidth]{figure/pc_3b}}
 \subfloat[compaction:L2]{\includegraphics[width=0.23\textwidth]{figure/type_4b}}  % data from 4/03040047
-\subfloat[compaction:L3]{\includegraphics[width=0.23\textwidth]{figure/type_5b}}
 \hfill
 \vspace{-10pt}
+\subfloat[compaction:L3]{\includegraphics[width=0.23\textwidth]{figure/type_5b}}
 \subfloat[compaction:L4] {\includegraphics[width=0.23\textwidth]{figure/type_6b}}
-\subfloat[PC ID: \#4]{\includegraphics[width=0.23\textwidth]{figure/pc_3b}}
 \vspace{-10pt}
 \caption{The lifetime distribution of compaction context.} 
 \label{fig:compaction}
@@ -152,16 +156,16 @@ in lower levels, thereby having much shorter lifetimes.
 
 Unfortunately, the compaction is done by the same module for all the levels.
 The program context is thus unable to distinguish write streams from different
-levels. Figure~\ref{fig:compaction}(d) shows the lifetimes of data written by
-the compaction module that has the same PC.  Figures~\ref{fig:compaction}(a),
-(b), and (c) illustrate the lifetimes of data when we manually assign different
+levels. Figure~\ref{fig:compaction}(a) shows the lifetimes of data written by
+the compaction module that has the same PC.  Figures~\ref{fig:compaction}(b),
+(c), and (d) illustrate the lifetimes of data when we manually assign different
 PC numbers to different levels by modifying the code.  As expected, data from
 the L1 are likely to have the shortest lifetime, while the L4 has generally
 long-lived data.
 
 In order to automatically assign data from the same PC to different SSD streams
 according to their lifetimes, we propose a two-phase method that decides SSD
-stream IDs in both a host and an SSD level.  PCStream running in the host
+stream IDs in both a host and an SSD level.  {\sf PCStream} running in the host
 roughly assigns a stream ID based on a PC value.  An FTL running inside an SSD
 uses this stream ID as a guideline and prevents data with different stream IDs
 from being mixed up in the same flash blocks. The FTL then decides a substream
