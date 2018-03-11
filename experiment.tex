@@ -1,8 +1,22 @@
 \section{Experimental Results}
 For our evaluation, we implemented PC extractor module at the 
 system call layer 
-and Stream Allocation module at the block I/O layer in the Linux kernel 3.16.
+and PC-Lifetime analyzer and PC-to-Stream mapper module 
+at the block device layer in the Linux kernel version 4.5.
 
+In order to evaluate the effectiveness of {\sf PCStream},
+we used Samsung PM963 480GB SSD (with 8 streams).
+As a warming workload, we wrote a single file sequentially to fill 90\%
+of logical device capacity, to ensure that 90\% of logical space stays valid
+throughout the test.
+For benchmarks, we used three scenarios of db\_bench of RocksDB.
+The update random scenario (read-modify-write for random keys), {\tt UR}, and 
+the append random scenario (read-modify-write with growing values), {\tt AR}, are
+for intensively updating key-value pairs.
+The fill random scenario (write values in random key order), {\tt FR}, simply writes key-value pairs.
+For each scenario, about 9000000 keys are inserted.
+
+\begin{comment}
 In order to evaluate the effectiveness of {\sf PCStream},
 we implemented the multi-stream feature and substream concept
 to the in-house SSD emulator
@@ -18,16 +32,10 @@ with the size of key-value is 8 KB and the number of levels was set to 4.
 However, the size of level multiplier is remained to be 10 as an usual setting,
 which means the size of the next level is 10 times larger than previous level,
 to maintain the level access patterns during the compaction.
+\end{comment}
 
-For benchmarks, we used three scenarios of db\_bench and db\_stress of RocksDB.
-The update random scenario (read-modify-write for random keys), {\tt UR}, and 
-the append random scenario (read-modify-write with growing values), {\tt AR}, are
-for intensively updating key-value pairs.
-The fill random scenario (write values in random key order), {\tt FR}, simply writes key-value pairs
-while db\_stress (data comparison with random write/delete/read), {\tt ST} shows complex 
-operations including deletion.
 
-For the data separation performance evaluation, 
+For the data separation performance comparison, 
 we also implemented Autostream, manual technique, and
 baseline which does not use the stream allocation policy.
 We compared WAF of the existing techniques with {\sf PCStream}

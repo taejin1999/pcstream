@@ -1,39 +1,41 @@
 \section{Basic Idea}
 \subsection{Fallacy: LBA-based lifetime prediction}
-
-Current automatic methods predict the lifetime of data based on the update
-frequency of LBAs~\cite{AutoStream}.  
+Many existing data separation techniques such as~\cite{HotCold, AutoStream} 
+estimate the data lifetime based on the update frequency of LBAs.  
 For example, AutoStream~\cite{AutoStream} assumes that, if
 some LBAs are frequently rewritten by applications, those LBAs hold hot data.
-This LBA-based lifetime prediction works poorly on modern applications, where
-the majority of new data are written in an append-only manner.  To understand
+This LBA-based lifetime prediction works poorly on applications, where
+a majority of new data are written in an append-only manner.  To understand
 the correlation between LBAs and the lifetime of data under append-only
 workloads, we analyzed the write pattern of RocksDB~\cite{RocksDB}, which is a
 popular key-value store based on the LSM-tree algorithm~\cite{LSM}.
 
-Fig.~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
-according to LBAs. Here, the lifetime of data is defined to be 
+For example, Fig.~\ref{fig:lba_lifetime}(a) shows how LBAs may be related 
+to data lifetimes\footnote{The lifetime of data is is defined to be 
 the number of write requests between when the data is written 
-and when the data is invalidated by an overwrite or a TRIM command. 
-%an elapsed time (unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
-%invalidated by an overwrite or a TRIM command. 
-As shown in
-Fig.~\ref{fig:lba_lifetime}(a), there is no strong correlation between the
-lifetime and LBAs -- all the data have very different lifetimes, regardless of
-their LBA numbers. We also analyzed 
+and when the data is invalidated by an overwrite or a TRIM command.}
+in RocksDB~\cite{RocksDB} (which is a popular key value store 
+based on the append-only LSB-tree algorithm~\cite{LSM}).  
+As shown in Fig.~\ref{fig:lba_lifetime}(a), 
+there exists no strong correlation between the LBAs and lifetimes in RocksDB.  
+\textcolor{blue}{This is in sharp contrast with a scatter plot for update workloads.}
+
+We also analyzed 
 how the lifetimes of LBAs change under some predictable patterns over times 
 although the overall lifetime distribution of LBAs shows large variances.
-Fig.~\ref{fig:lba_lifetime}(a) shows a scatter plot of data lifetimes over the logical time 
-(in the number of write requests) for a 1-MB chunk with \textcolor{red}{2048 LBAs (FIXME: is it right?)}. 
+Fig.~\ref{fig:lba_lifetime}(b) shows a scatter plot of data lifetimes over the logical time 
+for a 1-MB chunk with 2048 sectors. 
+As shown in Figure~\ref{fig:lba_lifetime}(b), 
+for the given chuck, data lifetimes varies in a random fashion.  
+\begin{comment}
 Over the logical time, the lifetime of data written to the chunk 
 varies in an unpredictable fashion.  
 For example, at the logical time 10, the lifetime was 1 but it increases about 
 2.6 million around the logical time 450 
 followed by a rapid drop around the logical time 600. 
-
+\end{comment}
 Our investigation strongly suggests that  under append-only
-workloads, LBAs couldn't be a useful 
-indicator to decide
+workloads, LBAs couldn't be a useful indicator to decide
 the hotness or lifetime of data.
 
 \begin{figure}[t]
