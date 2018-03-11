@@ -18,16 +18,12 @@ to the same stream, so that the copy cost of garbage collection can be minimized
 However, since it is difficult to know the future update times {\it a priori} when they are written,
 stream allocation decisions are often {\it manually} made by programmers based on their expertise (or experience) 
 on the application~\cite{MultiStream} or the file system~\cite{FStream}.  
-Furthermore, these manual techniques assume a fixed number of 
-streams (i.e., a specific SSD).   
-When an SSD has a smaller number of streams, stream allocation decisions should be changed.
+Furthermore, these manual techniques assume 
+that the number of streams in an SSD is not changing, 
+thus requiring manual modifications whenever the number of streams in the SSD changes.
 In this paper, our goal is to develop 
 a {\it fully automatic} technique for managing streams 
-which is applicable for {\it any} multi-streamed SSD
-\footnote{The main difference among different multi-streamed 
-SSDs is the maximum number of streams supported.  
-For example, the SSD used in FStream~\cite{FStream} has 9 streams 
-while the SSD used in AutoStream~\cite{AutoStream} has 16 streams.}.
+which is applicable for {\it any} multi-streamed SSD.
 
 To the best of our knowledge, AutoStream~\cite{AutoStream} is the only automatic 
 stream management technique
@@ -36,9 +32,9 @@ However, since AutoStream predicts data lifetimes using the update frequency
 of the logical block address (LBA), it does not work well with modern append-only workloads 
 such as RocksDB~\cite{RocksDB} or Cassandra~\cite{Cassandra}.  
 Unlike conventional update workloads where data written to the same LBAs 
-often show a strong update locality, 
+often show strong update locality, 
 append-only workloads make it impossible to predict data lifetimes 
-from the LBA characteristics (such as access frequency or access patterns).  
+from LBA characteristics (such as access frequency or access patterns).  
 For example, as shown in Figure~\ref{fig:lba_lifetime}(b), 
 data written to a fixed LBA range over times in RocksDB 
 show widely varying data lifetimes, 
@@ -53,10 +49,9 @@ system calls such as write() and writev() in the Linux kernel,
 we call their related program contexts as 
 {\it write program contexts.} In the rest of the paper, we use 
 {\it program contexts} interchangeably with {\it write program contexts}.}  
-as a main unit for managing streams.   
+as a stream management unit.
 A program context~\cite{PC}, which represents a particular execution phase of a program, 
 is known to be an effective hint in separating data with different lifetimes~\cite{PCHa}.  
-(That is, the lifetime of data written by the same program context tends to be very similar.)   
 {\sf PCStream} automatically maps an identified program context to a stream.  
 Since program contexts can be computed during the run time, 
 {\sf PCStream} does not need any manual work.   
@@ -76,12 +71,11 @@ from being mixed with future short-lived data of the stream {\it sID}.
 
 In order to evaluate the effectiveness of PCStream, we have implemented PCStream 
 in the Linux kernel (v. 4.5) and measured write amplification factor (WAF) values 
-using RocksDB on a Samsung PM963 SSD (which have 8 streams).  
-
-Our experimental results show that {\sf PCStream} is quite effective.  
+using RocksDB on a Samsung PM963 SSD (with 8 streams).  
+\textcolor{red}{Our experimental results show that {\sf PCStream} is quite effective.  
 It reduced the average WAF by XXX\% over AutoStream.  
 Furthermore, PCStream outperformed {\it even} the existing manual technique~\cite{MultiStream} 
-by reducing the average WAF by XXX\%.
+by reducing the average WAF by XXX\%.}
 
 The rest of this paper is organized as follows. 
 We explain the key motivations behind {\sf PCStream} in Section 2. 

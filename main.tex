@@ -25,7 +25,13 @@
 \bf PCStream: Automatic Stream Allocation Using Program Contexts}
 
 %\numberofauthors{1}
+\author{
+	{\rm Taejin Kim, Sangwook Shane Hahn, Sungjin Lee,} \\ 
+	{\rm Jooyoung Hwang, Jongyoul Lee, and Jihong Kim} \\
+	Seoul National University, DGIST, and Samsung Electronics
+	}
 
+\begin{comment}
 \author{
 {\rm Taejin Kim}\\
 Seoul National University
@@ -45,9 +51,9 @@ Samsung Electronics
 {\rm Jihong Kim} \\
 Seoul National University
 }
+\end{comment}
 
 \maketitle
-
 \thispagestyle{empty}
 
 \subsection*{Abstract}
@@ -55,17 +61,18 @@ We propose a fully automatic stream management technique, called {\sf PCStream},
 for multi-streamed SSDs.
 {\sf PCStream} is based on our observation that data lifetimes can be reliably predicted using
 write program contexts.  
-By extracting program contexts during the run time,  
+By extracting program contexts during run time,  
 {\sf PCStream}  automates the data-to-stream mapping.  
 When data mapped to the same
 stream show large differences in their lifetimes, {\sf PCStream}
 moves the long-lived data of the current stream to 
 its substream during garbage collection.
+\textcolor{red}{
 Our experimental results 
 on real SSDs
 show that {\sf PCStream} 
 outperforms manual stream management techniques by XXX\% 
-while no code modification is necessary.
+while no code modification is necessary.}
 
 \input{introduction}
 \input{motivation}
