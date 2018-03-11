@@ -1,5 +1,5 @@
 \section{Basic Idea}
-\subsection{Fallacy: LBA-based Lifetime Prediction}
+\subsection{Fallacy: LBA-based lifetime prediction}
 
 Current automatic methods predict the lifetime of data based on the update
 frequency of LBAs~\cite{AutoStream}.  
@@ -14,7 +14,7 @@ popular key-value store based on the LSM-tree algorithm~\cite{LSM}.
 Figure~\ref{fig:lba_lifetime}(a) shows the lifetime distribution of data
 according to LBAs. Here, the lifetime of data is defined to be 
 the number of write requests between when the data is written 
-and when the data is invalidated an overwrite or a TRIM command. 
+and when the data is invalidated by an overwrite or a TRIM command. 
 %an elapsed time (unit: $\mu$sec) from when it is newly written to a certain LBA to when it is
 %invalidated by an overwrite or a TRIM command. 
 As shown in
@@ -50,7 +50,7 @@ the hotness or lifetime of data.
 	\vspace{-15pt}
 \end{figure}
 
-\subsection{Program Context as a Lifetime Predictor}
+\subsection{Program context as a lifetime predictor}
 In order to separate data with different lifetimes, the key requirement is to devise 
 a means with which {\it different I/O contexts} can be effectively distinguished.  
 For example, LBAs played such a role fairly well for update workloads.  
