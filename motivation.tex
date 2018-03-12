@@ -1,6 +1,6 @@
 \section{Basic Idea}
 \subsection{Fallacy: LBA-based lifetime prediction}
-Many existing data separation techniques such as~\cite{HotCold, AutoStream} 
+Many existing data separation techniques such as~\cite{AutoStream, HotCold} 
 estimate the data lifetime based on the update frequency of LBAs.  
 For example, AutoStream~\cite{AutoStream} assumes that, if
 some LBAs are frequently rewritten by applications, those LBAs hold hot data.
@@ -18,7 +18,14 @@ in RocksDB~\cite{RocksDB} (which is a popular key value store
 based on the append-only LSB-tree algorithm~\cite{LSM}).  
 As shown in Fig.~\ref{fig:lba_lifetime}(a), 
 there exists no strong correlation between the LBAs and lifetimes in RocksDB.  
-\textcolor{blue}{This is in sharp contrast with a scatter plot for update workloads.
+\textcolor{blue}{%This is in sharp contrast with a scatter plot for update workloads.
+This result is different from the traditional update workload characteristics 
+that infer the different hotness of the address space 
+through the non-uniform access frequency distribution of the I/O workload.
+For example, Bhadkamkar et al.~\cite{Skew} utilized distinct hotness of a few addresses
+based on their analysis that the top 20\% most frequently accessed blocks
+contribute to a substantially large (45-66\%) percentage
+of total access.
 }
 
 We also analyzed 
@@ -35,17 +42,16 @@ For example, at the logical time 10, the lifetime was 1 but it increases about
 2.6 million around the logical time 450 
 followed by a rapid drop around the logical time 600. 
 \end{comment}
-Our investigation strongly suggests that  under append-only
+Our investigation strongly suggests that under append-only
 workloads, LBAs couldn't be a useful indicator to decide
 the hotness or lifetime of data.
 
 \begin{figure}[t]
-	\vspace{-10pt}
 	\centering
 	\subfloat[Lifetime patterns over LBAs]{\includegraphics[width=0.25\textwidth]{figure/lba_lifetime2}}  % data from 0/03031641
 	\subfloat[Lifetime patterns over time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk2}}
 	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
-	\vspace{-10pt}
+	\vspace{-15pt}
 	\caption{
 		Data lifetime distributions over varying LBAs and logical times.}
 		\label{fig:lba_lifetime}
@@ -54,7 +60,7 @@ the hotness or lifetime of data.
 
 \vspace{-5pt}
 \subsection{Program context as a lifetime predictor}
-In developing {\sf PCStream},  our key insight was that in most applications 
+In developing {\sf PCStream}, our key insight was that in most applications 
 (regardless of their I/O workload characteristics), 
 1) there are a few dominant I/O activities from an application 
 and 2) each dominant I/O activity tends to have unique data lifetime patterns.   
@@ -96,7 +102,7 @@ along the execution path of the PC.
 In RocksDB, for example, dominant I/O activities include logging, 
 flushing and compaction.  
 Since they are invoked through different function-call paths, 
-we can easily identify the dominant I/O activities of RocksDB using PCs. 
+we can easily identify dominant I/O activities of RocksDB using PCs. 
 Note that using the program context to distinguish data lifetimes is not new.  
 Ha et al. proposed a data separation technique based on the program context~\cite{PCHa}.   
 However, their work was not designed for append-only applications and didn’t target 
@@ -117,7 +123,7 @@ for a multi-stream feature of a modern SSD.
 \vspace{-15pt}
 \end{figure}
 
-In order to validate our hypothesis  that PCs can be used for predicting 
+In order to validate our hypothesis that PCs can be used for predicting 
 data lifetimes, we
 conducted experiments using RocksDB, comparing the accuracy of lifetime
 prediction of two different methods: 1) when the type of data streams is
@@ -131,6 +137,6 @@ For short-lived log data, the \texttt{automatic} method with PCs
 shows high accuracy to detect log data with short lifetimes, which is
 comparable to \texttt{manual}. Similarly, Figs.~\ref{fig:types_and_PCs}(c) and
 (d) show the accuracy of identifying data written by the flush module of
-RocksDB.  As expected, these two graphs have the similar lifetime patterns,
+RocksDB. As expected, these two graphs have the similar lifetime patterns,
 which indicates that PCs are valuable hints for managing data lifetimes.
 

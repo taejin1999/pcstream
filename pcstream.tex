@@ -70,8 +70,8 @@ in detail.
 
 \begin{figure}[t]
 	\centering
-	\subfloat[with frame pointer]{\includegraphics[width=0.21\textwidth]{figure/getpc_1}}  
-	%\hspace{10pt}
+	\subfloat[with frame pointer]{\includegraphics[width=0.23\textwidth]{figure/getpc_1}}  
+	\hspace{6pt}
 	\subfloat[without frame pointer]{\includegraphics[width=0.23\textwidth]{figure/getpc_2}}
 	\vspace{-10pt}
 	\caption{PC extractions with or without the frame pointer.}
@@ -117,7 +117,7 @@ those issues as our future work.
 
 
 \vspace{-5pt}
-\subsection{\textcolor{red}{Two-phase stream assignment}}
+\subsection{Two-phase stream assignment}
 \begin{figure}[!t]
 \centering
 \hspace{1pt}
@@ -179,7 +179,7 @@ stream IDs in both a host and an SSD level.  {\sf PCStream} roughly assigns a
 stream ID based on a PC value.  An FTL running inside an SSD uses this stream
 ID as a guideline and prevents data with different stream IDs from being mixed
 up in the same flash blocks. The FTL then decides a substream ID during garbage
-collection (GC). If there are valid data in a victim block for GC, it means
+collection. If there are valid data in a victim block for GC, it means
 that those data tend to have longer lifetimes compared to other data even if
 they belong to the same stream. Thus, the FTL splits the SSD stream into two
 substreams.  The first is for relatively hot data that were invalidated

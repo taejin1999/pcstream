@@ -7,7 +7,7 @@ When the host system maps two data $D_1$ and $D_2$ to
 different streams $S_1$ and $S_2$, a multi-streamed SSD guarantees that 
 $D_1$ and $D_2$ are placed to different blocks.   
 Since streams, when properly managed, can be very effective in minimizing 
-the copy cost of garbage collection, they
+the copy cost of garbage collection (GC), they
 can significantly improve both the performance and lifetime of 
 flash-based SSDs~\cite{MultiStream, FStream, AutoStream, Level}.
 
@@ -73,9 +73,11 @@ In order to evaluate the effectiveness of PCStream, we have implemented PCStream
 in the Linux kernel (v. 4.5) and measured write amplification factor (WAF) values 
 using RocksDB on a Samsung PM963 SSD (with 8 streams).  
 \textcolor{red}{Our experimental results show that {\sf PCStream} is quite effective.  
-It reduced the average WAF by XXX\% over AutoStream.  
-Furthermore, PCStream outperformed {\it even} the existing manual technique~\cite{MultiStream} 
-by reducing the average WAF by XXX\%.}
+It reduced the average WAF by XXX\% over AutoStream 
+and showed similar WAF to the manual technique.
+%Furthermore, PCStream outperformed {\it even} the existing manual technique~\cite{MultiStream} 
+%by reducing the average WAF by XXX\%.
+}
 
 The rest of this paper is organized as follows. 
 We explain the key motivations behind {\sf PCStream} in Section 2. 
