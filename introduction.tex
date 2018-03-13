@@ -55,9 +55,9 @@ is known to be an effective hint in separating data with different lifetimes~\ci
 {\sf PCStream} automatically maps an identified program context to a stream.  
 Since program contexts can be computed during the run time, 
 {\sf PCStream} does not need any manual work.   
-In order to handle append-only workloads, 
-{\sf PCStream} extended the definition of the data lifetime 
-so that the effect of the TRIM command~\cite{TRIM} can be accounted for. 
+%In order to handle append-only workloads, 
+%{\sf PCStream} extended the definition of the data lifetime 
+%so that the effect of the TRIM command~\cite{TRIM} can be accounted for. 
 
 Although most program contexts show that their data lifetimes are 
 distributed with small variances, we observed a few outliers 
@@ -69,15 +69,15 @@ during garbage collection.
 The substream prevents the long-lived data of the stream {\it sID} 
 from being mixed with future short-lived data of the stream {\it sID}.
 
-In order to evaluate the effectiveness of PCStream, we have implemented PCStream 
+In order to evaluate the effectiveness of {\sf PCStream}, 
+we have implemented {\sf PCStream}
 in the Linux kernel (v. 4.5) and measured write amplification factor (WAF) values 
-using RocksDB on a Samsung PM963 SSD (with 8 streams).  
-\textcolor{red}{Our experimental results show that {\sf PCStream} is quite effective.  
-It reduced the average WAF by XXX\% over AutoStream 
-and showed similar WAF to the manual technique.
-%Furthermore, PCStream outperformed {\it even} the existing manual technique~\cite{MultiStream} 
-%by reducing the average WAF by XXX\%.
-}
+using RocksDB on a Samsung PM963 SSD 
+as well as an SSD emulator.
+Our experimental results show that {\sf PCStream}
+can reduce the garbage collection overhead as much as a highly-optimized 
+manual stream management technique while requiring no code modification.  
+Furthermore, PCStream outperformed AutoStream by reducing the average WAF by 30\%.
 
 The rest of this paper is organized as follows. 
 We explain the key motivations behind {\sf PCStream} in Section 2. 

@@ -71,12 +71,11 @@ When data mapped to the same
 stream show large differences in their lifetimes, {\sf PCStream}
 moves the long-lived data of the current stream to 
 its substream during garbage collection.
-\textcolor{red}{
 Our experimental results 
-on real SSDs
 show that {\sf PCStream} 
-outperforms manual stream management techniques by XXX\% 
-while no code modification is necessary.}
+can reduce the garbage collection overhead as much as a highly-optimized 
+manual stream management technique 
+while no code modification is necessary.
 
 \input{introduction}
 \input{motivation}

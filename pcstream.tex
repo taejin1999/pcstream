@@ -5,13 +5,13 @@ obtains PC values at runtime, and then describe how multiple data with
 different PC values are combined and delivered to an SSD. Finally, we introduce
 a two-phase data separation technique that further optimizes {\sf PCStream}.
 
-\begin{figure}[b]
+\begin{figure}[t]
 	\centering
-	\vspace{-15pt}
 	\includegraphics[width=0.6\linewidth]{figure/architecture4}
 	\vspace{-10pt}
-	\caption{An overall architecture of {\sf PCStream}}
+	\caption{An overall architecture of {\sf PCStream}.}
 	\label{fig:architecture}
+	\vspace{-15pt}
 \end{figure}
 
 Fig.~\ref{fig:architecture} shows the overall architecture of {\sf PCStream},
@@ -36,15 +36,19 @@ As mentioned earlier, a PC is defined as the sum of program counters along the
 execution path of a function call that finally reaches a \texttt{write()}
 system call.  A function call involves pushing the next program counter to the
 stack as a return address, which is used as a return location to keep
-executing a caller when a callee function is finished.  In general, by
+executing a caller when a callee function is finished.  
+Fig.~\ref{fig:getpc}(a) shows the abstracted execution path of the flush thread
+of RocksDB.
+In general, by
 using a frame register, we are able to back-track the stack frames of the
 process and selectively get return addresses, which are then used for
-computing a PC value. For example, Fig.~\ref{fig:getpc}(a) illustrates how a PC
-value is obtained by back-tracking the stack.
+computing a PC value. For example, Fig.~\ref{fig:getpc}(b) illustrates how a PC
+value is obtained by back-tracking the stack. 
 
 Unfortunately, C/C++ compilers often optimize an output code so
 that it does not use a frame register if possible.  One example is a
-{\tt -fomit-frame-pointer} option of GCC. While it is effective in saving
+{\tt -fomit-frame-pointer} option of GCC~\cite{GCC}. 
+While it is effective in saving
 precious resources like CPU registers, this makes it difficult for us to
 back-track return addresses only. One alternative is fully examine
 every word in the stack and find out ones that point to the code
@@ -65,15 +69,18 @@ search process stops when a sufficient number of return addresses are found in
 the stack. Currently, this threshold value is set to 5.  In our experiments
 with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
 write system call, on average, so its overhead is not so huge.
-Fig.~\ref{fig:getpc}(b) illustrates how PC computation works in {\sf PCStream}
+Fig.~\ref{fig:getpc}(c) illustrates how PC computation works in {\sf PCStream}
 in detail.
+
 
 \begin{figure}[t]
 	\centering
-	\subfloat[with frame pointer]{\includegraphics[width=0.23\textwidth]{figure/getpc_1}}  
-	\hspace{6pt}
-	\subfloat[without frame pointer]{\includegraphics[width=0.23\textwidth]{figure/getpc_2}}
+	\subfloat[abstracted execution path of flush.]{\includegraphics[width=0.45\textwidth]{figure/getpc_1}}  
 	\vspace{-10pt}
+	\hfill
+	\subfloat[with frame pointer.]{\includegraphics[width=0.245\textwidth]{figure/getpc_2}}
+	\subfloat[without frame pointer.]{\includegraphics[width=0.25\textwidth]{figure/getpc_3}}
+	\vspace{-8pt}
 	\caption{PC extractions with or without the frame pointer.}
 	\label{fig:getpc}
 	\vspace{-15pt}
