@@ -1,17 +1,26 @@
 \section{Experimental Results}
 For our evaluation, we implemented PC extractor module at the 
 system call layer 
-and PC-Lifetime analyzer and PC-to-Stream mapper module 
+and the lifetime analyzer and stream mapper module 
 at the block device layer in the Linux kernel version 4.5.
+We also implemented manual technique~\cite{MultiStream}, 
+Autostream~\cite{AutoStream}, and
+baseline which uses only one stream.
+to compare them with {\sf PCStream}.
+For a detailed analysis, {\sf PCStream} is also compared to {\sf PCStream--}
+which excludes the second phase substream assignment 
+to see the effectiveness PC-based data separation only.
 
 In order to evaluate the effectiveness of {\sf PCStream},
-we implemented the multi-stream feature and substream concept
+we conduct experiments on two enviroments; the first one is 
+for the emulation.
+We implemented the multi-stream feature and substream concept
 to the in-house SSD emulator
 based on the open flash development platform~\cite{AMF}.
 The number of streams was set to 8 for the evaluation.
 The SSD emulator was 12 GB with four channels with four ways, and 
 the number of blocks per parallel unit was 512 and
-the number of pages per block was 256 with 4KB-sized page.
+the number of pages per block was 384 with 4KB-sized page.
 Due to the limited capacity of the emulator, 
 we scaled down the configuration of RocksDB.
 The base file size is set to 8 MB
@@ -20,60 +29,62 @@ However, the size of level multiplier is remained to be 10 as the general settin
 which means the size of the next level is 10 times larger than the previous level,
 to maintain the level access patterns during the compaction.
 
-For benchmarks, we used three scenarios of db\_bench of RocksDB.
-The update random scenario (read-modify-write for random keys), {\tt UR}, and 
-the append random scenario (read-modify-write with growing values), {\tt AR}, are
-for intensively updating key-value pairs.
-For each scenario, about 900,000 keys are inserted.
-The fill random scenario (write values in random key order), {\tt FR}, 
-inserts 300,000 key-value pairs 
-after 70\% of the device capacity was filled.
+The second one is for Samsung PM963 480GB SSD (with 8 streams).
+As a warming workload, we wrote a single file sequentially to fill 90\%
+of logical device capacity, to ensure that 90\% of logical space stays valid
+throughout the test.
 
-For the comparison, 
-we also implemented Autostream, manual technique, and
-baseline which does not use the stream allocation policy.
-We compared WAF of the existing techniques with {\sf PCStream}
-for each scenario and the result is shown in Fig.~\ref{fig:result_emul}. 
-We also evaluate the {\sf PCStream} without the second phase stream
-assignment to see the effectiveness PC-based data separation, 
-denoted by {\sf PCStream--}.
+For benchmarks, we used three scenarios of db\_bench of RocksDB.
+The first one is the update random scenario, {\tt UR}, which read-modify-writes for random keys. 
+The second one is append random scenario, {\tt AR}, which read-modify-writes with growing values.
+The last one is the fill random scenario, {\tt FR}, which writes values in random key order and 
+shows higher write ratio than others.
+The number of keys were set to about 900,000 for the emulator and about 90,000,000 for
+the SSD.
+
+\subsection{Results on the emulator}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.8\linewidth]{figure/result_emul}
+	\includegraphics[width=1\linewidth]{figure/result_emul}
 	\vspace{-10pt}
 	\caption{The WAF comparison on the emulator.}
 	\label{fig:result_emul}
 	\vspace{-15pt}
 \end{figure}
 
+We compared WAF of the existing techniques with {\sf PCStream}
+for each scenario and the result is shown in Fig.~\ref{fig:result_emul}. 
 As shown in Fig.~\ref{fig:result_emul}, 
 {\sf PCStream--} reduces WAF by up to 30\% and by 20\% on average
 over the AutoStream. 
 The result shows that separating short-lived data such as log or flush
 using PC was quite effectvive in reducing WAF.
 Moreover, {\sf PCStream} showed similar WAF to the manual technique,
-while reducing WAF by up to 38\% and by 30\% on average
+reducing WAF by up to 38\% and by 30\% on average
 over the AutoStream.
 The additional benefit comes from separating
-long-lived data of compaction during the
+long-lived data of the compaction PC during the
 second phase assignment.
 
-In order to evaluate the feasibility of {\sf PCStream} on a real SSD,
-we used Samsung PM963 480GB SSD (with 8 streams).
-As a warming workload, we wrote a single file sequentially to fill 90\%
-of logical device capacity, to ensure that 90\% of logical space stays valid
-throughout the test.
-
+\subsection{Results on the SSD}
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.8\linewidth]{figure/result_emul}
+	\includegraphics[width=1\linewidth]{figure/result_ssd}
 	\vspace{-10pt}
-	\caption{The WAF comparison on the SSD.(temporarily placed to check paper length)}
+	\caption{The WAF comparison on the SSD.}
 	\label{fig:result_SSD}
 	\vspace{-15pt}
 \end{figure}
 
-\vspace{5cm}
-\textcolor{blue}{Space for explaining the result on the real SSD.}
-\vspace{5cm}
+Since we can not implement the second-phase substream assignment
+for the SSD, we compare {\sf PCStream--} only for the SSD.
+As shown in Fig.~\ref{fig:result_SSD}, 
+{\sf PCStream--} reduces the average WAF by 16\% 
+\textcolor{blue}{(may be changed)} over the AutoStream. 
+Although AutoStream on the SSD works better than on the emulator,
+{\sf PCStream--} still outperforms AutoStream,
+thus showing the effectiveness of the PC-based 
+data separation.
+If the program is written in more PC-friendly manner, 
+{\sf PCStream} will be able to get closer WAF to manual.

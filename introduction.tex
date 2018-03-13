@@ -9,15 +9,16 @@ $D_1$ and $D_2$ are placed to different blocks.
 Since streams, when properly managed, can be very effective in minimizing 
 the copy cost of garbage collection (GC), they
 can significantly improve both the performance and lifetime of 
-flash-based SSDs~\cite{MultiStream, FStream, AutoStream, Level}.
+flash-based SSDs~\cite{MultiStream, Level, FStream, AutoStream}.
 
 In order to achieve high performance on multi-streamed SSDs, data with similar 
 {\it future} update times~\cite{PCHa}
 should be allocated 
-to the same stream, so that the copy cost of garbage collection can be minimized.
+to the same stream, so that the copy cost of GC can be minimized.
 However, since it is difficult to know the future update times {\it a priori} when they are written,
-stream allocation decisions are often {\it manually} made by programmers based on their expertise (or experience) 
-on the application~\cite{MultiStream} or the file system~\cite{FStream}.  
+stream allocation decisions are often {\it manually} made 
+by programmers based on their expertise (or experience) 
+on the application~\cite{MultiStream, Level} or the file system~\cite{FStream}.  
 Furthermore, these manual techniques assume 
 that the number of streams in an SSD is not changing, 
 thus requiring manual modifications whenever the number of streams in the SSD changes.
@@ -50,7 +51,7 @@ we call their related program contexts as
 {\it write program contexts.} In the rest of the paper, we use 
 {\it program contexts} interchangeably with {\it write program contexts}.}  
 as a stream management unit.
-A program context~\cite{PC}, which represents a particular execution phase of a program, 
+A program context~\cite{PC, PC2}, which represents a particular execution phase of a program, 
 is known to be an effective hint in separating data with different lifetimes~\cite{PCHa}.  
 {\sf PCStream} automatically maps an identified program context to a stream.  
 Since program contexts can be computed during the run time, 
@@ -65,7 +66,7 @@ whose data lifetimes have rather large variances.
 In {\sf PCStream}, 
 when such a PC {\it pID} is observed (which was mapped to a stream {\it sID}), 
 the long-lived data of {\it pID} are moved to the substream of {\it sID}
-during garbage collection.  
+during GC.  
 The substream prevents the long-lived data of the stream {\it sID} 
 from being mixed with future short-lived data of the stream {\it sID}.
 
@@ -75,7 +76,7 @@ in the Linux kernel (v. 4.5) and measured write amplification factor (WAF) value
 using RocksDB on a Samsung PM963 SSD 
 as well as an SSD emulator.
 Our experimental results show that {\sf PCStream}
-can reduce the garbage collection overhead as much as a highly-optimized 
+can reduce the GC overhead as much as a highly-optimized 
 manual stream management technique while requiring no code modification.  
 Furthermore, PCStream outperformed AutoStream by reducing the average WAF by 30\%.
 

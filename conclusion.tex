@@ -1,24 +1,18 @@
-\section{Conclusion}
-In this paper, we presented a new fully automatic stream management technique,
-called {\sf PCStream}, which can improve the accuracy of data separation
-using the application level information.
-%In the modern append-only workload, since the hotness of data is regardless of 
-%the its address, 
-%LBA-based existing automatic stream management technique have limitations on 
-%identifying the hotness of data.
-{\sf PCStream} was motivated by our observation that data lifetimes can be
-reliably predicted using write program contexts which is from the higher
-abstraction level than LBAs, which was used for the existing automatic technique.
-By allocating the identified PCs into streams according to the mapping policy,
-{\sf PCStream} can separate different lifetime data. 
-For some PCs showing various lifetime, {\sf PCStream} moves the long-lived data of 
-current stream to its substream during the garbage collection.
-Experimental result showed that {\sf PCStream} reduces WAF by up to 38\% over the existing
+\section{Conclusions}
+We have presented a new stream management technique, {\sf PCStream}, for multi-streamed SSDs.  
+Unlike existing stream management techniques, {\sf PCStream} fully automates 
+the process of mapping data to a stream based on PCs, 
+which work well for append-only workloads as well as update workloads.  
+By exploiting an observation that most PCs are distinguishable from each other 
+in their lifetime characteristics, {\sf PCStream} allocates each PC to a different stream.  
+When a PC has a large variance in their lifetimes, {\sf PCStream} refines its stream allocation 
+during garbage collection and moves the long-lived data of the current stream to its substream.  
+Our experimental results show that {\sf PCStream} can reduce WAF by up to 38\% over the existing
 automatic technique.
 
-As future work, we will develop the modules of {\sf PCStream} in various directions. 
-In particular, a PC clustering module will be developed to find and group the PCs with similar lifetimes
-in case of the number of PCs is larger than the number of streams.
-We will also develop a stream allocator and mapping policy that dynamically allocates 
-streams by monitoring PC lifetime information for 
-applications with complex write patterns or multiple instances.
+The current version of {\sf PCStream} can be extended in several directions.  
+For example, {\sf PCStream} should be improved in its PC clustering method 
+so that it can work effectively even when there are more PCs than the number of streams.  
+We also plan to evaluate {\sf PCStream} (not {\sf PCStream--}) on real SSDs 
+by implementing the two-phase stream assignment algorithm inside an FTL.
+

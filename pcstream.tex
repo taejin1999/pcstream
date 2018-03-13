@@ -5,6 +5,23 @@ obtains PC values at runtime, and then describe how multiple data with
 different PC values are combined and delivered to an SSD. Finally, we introduce
 a two-phase data separation technique that further optimizes {\sf PCStream}.
 
+
+Fig.~\ref{fig:architecture} shows the overall architecture of {\sf PCStream},
+which is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer},
+and a \textit{PC-to-stream mapper}.  The PC extractor is implemented in the
+Linux kernel as part of a system call handler. Its responsibility is for
+intercepting write-related system functions (e.g., \texttt{write()}) and extracting
+a PC value.  This enables us to keep track of PCs corresponding to new data
+written by a specific module of an application.  The obtained PC is stored in
+an inode data structure of a file system (modified for \textsf{PCStream}) and
+is delivered to the lifetime analyzer implemented in a block layer.  The
+lifetime analyzer estimates expected lifetimes of data belonging to a given PC.
+To know when data are deleted, the lifetime analyzer also intercepts TRIM~\cite{TRIM}
+requests from a file system.  Based on the lifetime information, the
+PC-to-stream mapper clusters PC values with similar lifetimes and maps them
+together to the same stream ID.  This mapping is required because of the
+limited number of streams supported by an SSD.
+
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.6\linewidth]{figure/architecture4}
@@ -14,120 +31,112 @@ a two-phase data separation technique that further optimizes {\sf PCStream}.
 	\vspace{-15pt}
 \end{figure}
 
-Fig.~\ref{fig:architecture} shows the overall architecture of {\sf PCStream},
-which is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer},
-and a \textit{PC-to-stream mapper}.  The PC extractor is implemented in the
-Linux kernel as part of a system call handler. Its responsibility is for
-intercepting write-related system calls (e.g., \texttt{write()}) and extracting
-a PC value.  This enables us to keep track of PCs corresponding to new data
-written by a specific module of an application.  The obtained PC is stored in
-an inode data structure of a file system (modified for \textsf{PCStream}) and
-is delivered to the lifetime analyzer implemented in a block layer.  The
-lifetime analyzer estimates expected lifetimes of data belonging to a given PC.
-To know when data is deleted, the lifetime analyzer also intercepts TRIM
-requests from a file system.  Based on the lifetime information, the
-PC-to-stream mapper clusters PC values with similar lifetimes and maps them
-together to the same stream ID.  This mapping is required because of the
-limited number of streams supported by an SSD.
-
 \vspace{-5pt}
 \subsection{Automatic PC computation}
 As mentioned earlier, a PC is defined as the sum of program counters along the
-execution path of a function call that finally reaches a \texttt{write()}
-system call.  A function call involves pushing the next program counter to the
-stack as a return address, which is used as a return location to keep
-executing a caller when a callee function is finished.  
-Fig.~\ref{fig:getpc}(a) shows the abstracted execution path of the flush thread
-of RocksDB.
-In general, by
-using a frame register, we are able to back-track the stack frames of the
-process and selectively get return addresses, which are then used for
-computing a PC value. For example, Fig.~\ref{fig:getpc}(b) illustrates how a PC
+execution path of a function call that finally reaches a write-related
+system functions. A function call involves pushing the next program counter,
+which is used as a return address, to the stack
+followed by pushing the frame pointer.
+In general, by using a frame pointer, 
+we are able to back-track the stack frames of the
+process and selectively get return addresses for generating a PC value. 
+For example, 
+Fig.~\ref{fig:getpc}(a) shows the abstracted execution path for flushing data
+of RocksDB and
+Fig.~\ref{fig:getpc}(b) illustrates how a PC
 value is obtained by back-tracking the stack. 
+The PC extractor obtains and accumulates each return address, which is pushed 
+before calling the {\sf write()}, {\sf BuildTable()} and {\sf WriteLevel0Table()}
+functions, by referring the frame pointer which holds the address of the previous 
+frame pointer.
 
 Unfortunately, C/C++ compilers often optimize an output code so
 that it does not use a frame register if possible.  One example is a
 {\tt -fomit-frame-pointer} option of GCC~\cite{GCC}. 
 While it is effective in saving
 precious resources like CPU registers, this makes it difficult for us to
-back-track return addresses only. One alternative is fully examine
-every word in the stack and find out ones that point to the code
-segment of the process's virtual address.  Modern OSes divide the process's
+back-track return addresses only. One alternative is fully examining
+every word in the stack and finding out ones that point to the code
+segment of the process's virtual address.  
+\begin{comment}
+Modern OSes divide the process's
 virtual address into segments for their purposes, and thus program instructions
 (code) are stored in a specific range of the virtual address space (e.g.,
 {\texttt{0x400000h}} to {\texttt{0x40c000h}} in the
-Linux).  If there are words that hold a value pointing to somewhere in the code
-segment, they are highly likely to be one of the return values.  
+Linux).  
+\end{comment}	
+If there are words that hold a value belongs to the code
+segment, they are highly likely to be a return address.  
 \begin{comment} % DO NO REMOVE
 Moreover, since the PC extractor is implemented in the kernel, it is not only
 able to access the entire virtual address of a process, but also know the
 address space layout.
 \end{comment}
 
-Searching the entire process stack would require long CPU time. Thus, the
-search process stops when a sufficient number of return addresses are found in
-the stack. Currently, this threshold value is set to 5.  In our experiments
+\begin{figure}[b]
+	\vspace{-15pt}
+	\centering
+	\subfloat[An abstracted execution path for flushing data.]{\includegraphics[width=0.45\textwidth]{figure/getpc_1}}  
+	\vspace{-10pt}
+	\hfill
+	\subfloat[with the frame pointer.]{\includegraphics[width=0.245\textwidth]{figure/getpc_2}}
+	\subfloat[without the frame pointer.]{\includegraphics[width=0.25\textwidth]{figure/getpc_3}}
+	\vspace{-8pt}
+	\caption{An example execution path and its PC extraction methods.}
+	\label{fig:getpc}
+\end{figure}
+
+Searching the entire stack would require long CPU time. Thus, the
+search process stops when a sufficient number of return addresses are found.
+Currently, this threshold value is set to 5.  In our experiments
 with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
 write system call, on average, so its overhead is not so huge.
 Fig.~\ref{fig:getpc}(c) illustrates how PC computation works in {\sf PCStream}
 in detail.
 
 
-\begin{figure}[t]
-	\centering
-	\subfloat[abstracted execution path of flush.]{\includegraphics[width=0.45\textwidth]{figure/getpc_1}}  
-	\vspace{-10pt}
-	\hfill
-	\subfloat[with frame pointer.]{\includegraphics[width=0.245\textwidth]{figure/getpc_2}}
-	\subfloat[without frame pointer.]{\includegraphics[width=0.25\textwidth]{figure/getpc_3}}
-	\vspace{-8pt}
-	\caption{PC extractions with or without the frame pointer.}
-	\label{fig:getpc}
-	\vspace{-15pt}
-\end{figure}
 
 
 \vspace{-5pt}
 \subsection{PC lifetime prediction}
-The prediction of PC lifetimes is rather complicated. The lifetime of
-append-only data is defined as from when they are appended to the storage to
-when they are deleted by an application. The time at which data belonging to a
-certain PC is written can be obtained through the PC extractor. To know when
-the data is removed, however, we should be able to monitor TRIM commands from a
-file system that invalidate previously written data.  To keep track of the
-lifetimes of data written by a specific PC, the lifetime analyzer maintains a
-list of LBAs for PCs when the LBAs are being written.  Upon receiving TRIM
+The prediction of PC lifetimes is rather complicated. 
+The data lifetime of the append-only workload is defined 
+from when a write request is issued until the TRIM command~\cite{TRIM} is issued to 
+the corresponding address.
+Before issuing a write request, the lifetime analyzer
+maintains the written time and the address as well as the PC value.
+Upon receiving TRIM
 commands destined for those LBAs, the lifetime analyzer is able to measure the
-exact lifetime of those data. In append-only applications, a large chunk of
-data are written and invalidated together (e.g., 64 MB in RocksDB), and thus
-LBAs belonging to the same PC tend to have the similar lifetime. Note that, the
-same PC generates multiple data streams with different lifetimes, so the
-average of them is used as PC's expected lifetime.
+exact lifetime of those data. 
+Note that, the
+same PC may generate multiple data streams with different lifetimes, 
+so the average of them is used as PC's expected lifetime.
 
 
 \vspace{-5pt}
-\subsection{Mapping PCs to SSD stream}
+\subsection{Mapping PCs to SSD streams}
 Our next step is to map a group of PCs with similar lifetimes to an SSD stream.
 This is because of a limited number of stream IDs offered by an SSD. For
 example, SSDs used in FStream~\cite{FStream} and AutoStream~\cite{AutoStream}
-support only 9 and 16 streams, respectively. To properly group multiple PCs,
-the PC-to-stream mapper employs a simple 1-D clustering algorithm, which is a
-sort of like the Jenks optimization method~\cite{Jenks}.  For all the PCs, the
-mapper internally builds a 1-D array sorted by PCs' lifetimes.  Given an
-available SSD stream number, it runs the clustering algorithm and determines
-the best arrangement of PCs into different classes.  To adapt to changing
-workloads, reclustering operations should be regularly performed. Since the
-number of PCs created by applications is not limited, the clustering algorithm
-must be efficient enough to quickly handle many PCs. Our goal in this work is
-to confirm the feasibility of using the PC for multi-streamed SSDs, so we leave
-those issues as our future work.
-
+support only 9 and 16 streams, respectively. 
+Since our goal in this work is
+to confirm the feasibility of using the PC for multi-streamed SSDs, 
+we assumed that the number of streams was sufficient to map PCs of 
+an application.
+To properly support multiple PCs in a general setting,
+the PC-to-stream mapper needs to employ a simple clustering algorithm.
+Given an
+available SSD stream number, the clustering algorithm needs to determine
+the best arrangement of PCs into different classes.  For adapting to changing
+workloads, re-clustering operations should be regularly performed. 
+(We leave these issues as our future work.)
 
 \vspace{-5pt}
 \subsection{Two-phase stream assignment}
 \begin{figure}[!t]
 \centering
-\hspace{1pt}
+\hspace{2pt}
 \subfloat[compaction: all levels]{\includegraphics[width=0.23\textwidth]{figure/pc_3b}}
 \subfloat[compaction: L2]{\includegraphics[width=0.23\textwidth]{figure/type_4b}}  % data from 4/03040047
 \hfill
@@ -135,7 +144,7 @@ those issues as our future work.
 \subfloat[compaction: L3]{\includegraphics[width=0.23\textwidth]{figure/type_5b}}
 \subfloat[compaction: L4] {\includegraphics[width=0.23\textwidth]{figure/type_6b}}
 \vspace{-10pt}
-\caption{The lifetime distribution of compaction context.} 
+\caption{The lifetime distribution of the compaction activity.} 
 \label{fig:compaction}
 \vspace{-15pt}
 \end{figure}
@@ -173,23 +182,25 @@ in lower levels, thereby having shorter lifetimes.
 %in lower levels, thereby having much shorter lifetimes.
 
 Unfortunately, the compaction is done by the same module for all the levels.
-PC is thus not useful to distinguish data written for different levels.
-Fig.~\ref{fig:compaction}(a) shows the lifetimes of data written by the
-compaction module.  Figs.~\ref{fig:compaction}(b)-(d) illustrate the lifetimes
-of data when different PC numbers are assigned to each level by modifying the
-code.  Data from L1 are likely to have shorter lifetime, while L4 has generally
+A PC is thus not useful to distinguish data written for different levels.
+Fig.~\ref{fig:compaction}(a) shows the lifetimes of automatically identified data written by the
+compaction module. 
+Figs.~\ref{fig:compaction}(b)-(d) illustrate the lifetimes
+of manually identified data.
+Data from L1 are likely to have shorter lifetime, while L4 has generally
 long-lived data.
 
 In order to automatically assign data from the same PC to different SSD streams
 according to their lifetimes, we propose a two-phase method that decides SSD
-stream IDs in both a host and an SSD level.  {\sf PCStream} roughly assigns a
-stream ID based on a PC value.  An FTL running inside an SSD uses this stream
-ID as a guideline and prevents data with different stream IDs from being mixed
-up in the same flash blocks. The FTL then decides a substream ID during garbage
-collection. If there are valid data in a victim block for GC, it means
+stream IDs in both a host and an SSD level.  
+For such a PC, e.g. compaction PC {\it pID}, {\sf PCStream} roughly assigns a
+stream {\it sID} as a guideline.
+If there are valid data in a victim block for GC, it means
 that those data tend to have longer lifetimes compared to other data even if
-they belong to the same stream. Thus, the FTL splits the SSD stream into two
-substreams.  The first is for relatively hot data that were invalidated
+they belong to the same stream.
+To separate long-lived data of {\it pID}, e.g. L4 data, 
+an FTL running inside an SSD allocates a substream for {\it sID}.
+The first assignment is for relatively hot data that were invalidated
 earlier; the second is for relatively cold ones that are still valid in the
 victim.  After that, data with different substream IDs are isolated in
 different blocks. 
