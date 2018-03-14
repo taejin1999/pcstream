@@ -20,11 +20,11 @@ based on the open flash development platform~\cite{AMF}.
 The number of streams was set to 8 for the evaluation.
 The SSD emulator was 12 GB with four channels with four ways, and 
 the number of blocks per parallel unit was 512 and
-the number of pages per block was 384 with 4KB-sized page.
+the number of pages per block was 384 with page (4 KB).
 Due to the limited capacity of the emulator, 
 we scaled down the configuration of RocksDB.
 The base file size is set to 8 MB
-with an 8KB-sized key-value pair and the number of levels was set to 4.
+with an key-value pair (8 KB) and the number of levels was set to 4.
 However, the size of level multiplier is remained to be 10 as the general setting,
 which means the size of the next level is 10 times larger than the previous level,
 to maintain the level access patterns during the compaction.
@@ -47,7 +47,7 @@ the SSD.
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{figure/result_emul.pdf}
-	\vspace{-10pt}
+	\vspace{-15pt}
 %	\caption{The WAF comparison on the emulator.}
 	\caption{A comparison of WAF on the SSD emulator.}
 	\label{fig:result_emul}
@@ -71,7 +71,7 @@ second phase assignment.
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{figure/result_ssd.pdf}
-	\vspace{-10pt}
+	\vspace{-15pt}
 	\caption{A comparison of WAF on PM963.}
 	\label{fig:result_SSD}
 	\vspace{-15pt}
