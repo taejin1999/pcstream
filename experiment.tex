@@ -19,7 +19,7 @@ read-modify-writes in the SSD.  \texttt{AR} is similar to \texttt{UR}, except
 that it performs the update of values for growing keys. \texttt{FR} writes
 key-value pairs to the SSD in a random key order.
 
-\subsection{Experiments with the emulator}
+\subsection{Experiments with an SSD emulator}
 
 \begin{figure}[t]
 	\centering
@@ -46,7 +46,7 @@ scenarios, and the result is shown in Fig.~\ref{fig:result_emul}.  As shown in
 Fig.~\ref{fig:result_emul}, {\sf PCStream$^*$} reduced WAF by up to 30\% over
 \textsf{AutoStream}.  The result shows that separating short-lived data (e.g.,
 log and flush) from long-lived one (e.g., compaction) using PC was quite
-effective in reducing WAF.  Moreover, {\sf PCStream} showed similar WAF to
+effective in reducing WAF.  Moreover, {\sf PCStream} even showed similar WAF to
 \textsf{Manual}, reducing it by up to 38\% over \textsf{AutoStream}.  This
 additional benefit came from isolating long- and short-lived data in separate
 blocks through the two-phase assignment at the SSD even if they belonged to the
@@ -54,7 +54,7 @@ same compaction PC.
 
 \textcolor{red}{(TODO: please add text for new exp here)}
 
-\subsection{Experiments with the SSD}
+\subsection{Experiments with a real-world SSD}
 
 \begin{figure}[t]
 	\centering
@@ -73,10 +73,13 @@ SSD before running benchmarks, we filled up 90\% of the SSD capacity with valid
 data.
 
 As illustrated in Fig.~\ref{fig:result_SSD}, {\sf PCStream$^*$} reduced WAF by
-30\% over \textsf{AutoStream} on average. Even though \textsf{AutoStream} on
-the SSD performed better than on the emulator, {\sf PCStream$^*$} still
-outperformed \textsf{AutoStream}, confirming the feasibility of the PC-based
-data separation on real-world SSDs.  We also expect that {\sf PCStream} would
-be able to achieve WAF closer to \textsf{Manual} once the two-phase assignment
-is applied.
+30\% over \textsf{AutoStream} on average.  There were large WAF gaps between
+\textsf{PCStream$^{*}$} and the manually optimized case.  If the substream was
+properly supported during GC, we believe that \textsf{PCStream} could show
+similar WAF values as \textsf{Manual}.  \textsf{PCStream$^*$} still
+outperformed \textsf{AutoStream}, but a performance gap was smaller over that
+in the emulated SSD environment.  It was difficult to pinpoint why
+\textsf{AutoStream} worked better in PM963 over in the emulated SSD, but we
+suspect that some internal features of PM963 such as a large block size or some
+implementation details of streams might be related. 
 
