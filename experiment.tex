@@ -7,7 +7,7 @@ We also implemented manual technique~\cite{MultiStream},
 Autostream~\cite{AutoStream}, and
 baseline which uses only one stream.
 to compare them with {\sf PCStream}.
-For a detailed analysis, {\sf PCStream} is also compared to {\sf PCStream--}
+For a detailed analysis, {\sf PCStream} is also compared to {\sf PCStream}$^{--}$
 which excludes the second phase substream assignment 
 to see the effectiveness PC-based data separation only.
 
@@ -42,13 +42,14 @@ shows higher write ratio than others.
 The number of keys were set to about 900,000 for the emulator and about 90,000,000 for
 the SSD.
 
-\subsection{Results on the emulator}
+\subsection{Results on the SSD emulator}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=1\linewidth]{figure/result_emul}
+	\includegraphics[width=1\linewidth]{figure/result_emul.pdf}
 	\vspace{-10pt}
-	\caption{The WAF comparison on the emulator.}
+%	\caption{The WAF comparison on the emulator.}
+	\caption{A comparison of WAF on the SSD emulator.}
 	\label{fig:result_emul}
 	\vspace{-15pt}
 \end{figure}
@@ -56,33 +57,32 @@ the SSD.
 We compared WAF of the existing techniques with {\sf PCStream}
 for each scenario and the result is shown in Fig.~\ref{fig:result_emul}. 
 As shown in Fig.~\ref{fig:result_emul}, 
-{\sf PCStream--} reduces WAF by up to 30\% and by 20\% on average
-over the AutoStream. 
+{\sf PCStream}$^{--}$ reduces WAF by 25\% on average over the AutoStream. 
 The result shows that separating short-lived data such as log or flush
 using PC was quite effectvive in reducing WAF.
 Moreover, {\sf PCStream} showed similar WAF to the manual technique,
-reducing WAF by up to 38\% and by 30\% on average
+reducing WAF by 30\% on average
 over the AutoStream.
 The additional benefit comes from separating
 long-lived data of the compaction PC during the
 second phase assignment.
 
-\subsection{Results on the SSD}
+\subsection{Results on Samsung PM963 SSD}
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=1\linewidth]{figure/result_ssd}
+	\includegraphics[width=1\linewidth]{figure/result_ssd.pdf}
 	\vspace{-10pt}
-	\caption{The WAF comparison on the SSD.}
+	\caption{A comparison of WAF on PM963.}
 	\label{fig:result_SSD}
 	\vspace{-15pt}
 \end{figure}
 
 Since we can not implement the second-phase substream assignment
-for the SSD, we compare {\sf PCStream--} only for the SSD.
+for the SSD, we compare {\sf PCStream}$^{--}$ only for the SSD.
 As shown in Fig.~\ref{fig:result_SSD}, 
-{\sf PCStream--} reduces the average WAF by 30\%  over the AutoStream. 
+{\sf PCStream}$^{--}$ reduces the average WAF by 26\% over the AutoStream. 
 Although AutoStream on the SSD works better than on the emulator,
-{\sf PCStream--} still outperforms AutoStream,
+{\sf PCStream}$^{--}$ still outperforms AutoStream,
 thus showing the effectiveness of the PC-based 
 data separation.
 If the program is written in more PC-friendly manner, 
