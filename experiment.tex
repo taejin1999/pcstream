@@ -23,8 +23,8 @@ key-value pairs to the SSD in a random key order.
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=1\linewidth]{figure/result_emul.pdf}
-	\vspace{-15pt}
+	\includegraphics[width=0.9\linewidth]{figure/result_emul.pdf}
+	\vspace{-10pt}
 %	\caption{The WAF comparison on the emulator.}
 	\caption{A comparison of WAF on the SSD emulator.}
 	\label{fig:result_emul}
@@ -41,6 +41,16 @@ of streams supported by the emulator was 8.  The SSD emulator provided 12 GB
 capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of
 which was composed of 384 4-KB pages.  
 
+\begin{figure}[b]
+	\centering
+	\includegraphics[width=0.9\linewidth]{figure/streamlifetime}
+	\vspace{-10pt}
+%	\caption{The WAF comparison on the emulator.}
+	\caption{A lifetime distribution of stream data}
+	\label{fig:streamlifetime}
+	\vspace{-15pt}
+\end{figure}
+
 We compared WAF of the existing techniques with {\sf PCStream} for the three
 scenarios, and the result is shown in Fig.~\ref{fig:result_emul}.  As shown in
 Fig.~\ref{fig:result_emul}, {\sf PCStream$^*$} reduced WAF by up to 30\% over
@@ -53,13 +63,26 @@ blocks through the two-phase assignment at the SSD even if they belonged to the
 same compaction PC.
 
 \textcolor{red}{(TODO: please add text for new exp here)}
+In order to analyze the improvement made by {\sf PCStream}, 
+we measured the data lifetime of each stream for the {\tt UR} scenario.
+Fig.~\ref{fig:streamlifetime} shows how big is the difference of the 
+lifetime of data allocated to the same stream by each technique.
+As shown in Fig.~\ref{fig:streamlifetime}, for AutoStream, data in the same stream show
+large difference since AutoStream does not notice when long-lived data is written to
+the hot address area.
+However, {\sf PCStream$^*$} can identify short-lived data from 
+several dominant I/O activities as mentioned 
+in section 2, e.g., S0 and S2 in the Fig.~\ref{fig:streamlifetime}.
+The long-lived data moved to a substream by {\sf PCStream} did not erased
+during the execution so the lifetime of data in the substream, e.g. S6, S7,
+can not be measured.
 
 \subsection{Experiments with a real-world SSD}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=1\linewidth]{figure/result_ssd.pdf}
-	\vspace{-15pt}
+	\includegraphics[width=0.9\linewidth]{figure/result_ssd.pdf}
+	\vspace{-10pt}
 	\caption{A comparison of WAF on PM963.}
 	\label{fig:result_SSD}
 	\vspace{-15pt}
