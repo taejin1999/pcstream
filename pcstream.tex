@@ -1,26 +1,30 @@
 \section{Design of PCStream}
-In this section, we describe in detail the proposed automatic stream management
-technique, {\sf PCStream}.  We first explain a mechanism that automatically
-obtains PC values at runtime, and then describe how multiple data with
-different PC values are combined and delivered to an SSD. Finally, we introduce
-a two-phase data separation technique that further optimizes {\sf PCStream}.
+We describe in detail the proposed automatic stream management technique, {\sf
+PCStream}.  We first explain a mechanism that automatically extracts PCs during
+run time, and then describe how multiple PCs are assigned to streams which are
+delivered to an SSD.  Finally, we introduce `substreams' based on a two-phase
+stream assignment technique, which effectively mitigates the effect of a few
+ill-behaving PCs with large lifetime variances.
 
+%{\it The PC extractor module}, which is implemented in the ... as part ... of a
+%system call handler, computes a PC signature (i.e., a sum of program counter
+%values) for each write-related system function. 추가 동작 설명..
 
-Fig.~\ref{fig:architecture} shows the overall architecture of {\sf PCStream},
-which is composed of a \textit{PC extractor}, a \textit{PC lifetime analyzer},
-and a \textit{PC-to-stream mapper}.  The PC extractor is implemented in the
-Linux kernel as part of a system call handler. Its responsibility is for
-intercepting write-related system functions (e.g., \texttt{write()}) and extracting
-a PC value.  This enables us to keep track of PCs corresponding to new data
-written by a specific module of an application.  The obtained PC is stored in
-an inode data structure of a file system (modified for \textsf{PCStream}) and
-is delivered to the lifetime analyzer implemented in a block layer.  The
-lifetime analyzer estimates expected lifetimes of data belonging to a given PC.
-To know when data are deleted, the lifetime analyzer also intercepts TRIM~\cite{TRIM}
-requests from a file system.  Based on the lifetime information, the
-PC-to-stream mapper clusters PC values with similar lifetimes and maps them
-together to the same stream ID.  This mapping is required because of the
-limited number of streams supported by an SSD.
+Fig.~\ref{fig:architecture} shows an overall organization of {\sf PCStream}.
+\textit{The PC extractor module}, which is implemented in the Linux kernel as
+part of a system call handler, computes a PC signature (i.e., a sum of program
+counter values) for each write-related system function (e.g.,
+\texttt{write()}).  This enables us to keep track of PCs corresponding to new
+data written by a specific module of an application.  The obtained PC is stored
+in an inode data structure of a file system (modified for \textsf{PCStream})
+and is delivered to \textit{the lifetime analyzer module} which estimates
+expected lifetimes of data belonging to a given PC in the block device level.
+In order to efficiently detect the end of data lifetime in append-only
+workloads, the lifetime analyzer also intercepts TRIM~\cite{TRIM} requests from
+a file system.  Based on the lifetime information, \textit{the PC-to-stream
+mapper module} clusters PCs with similar lifetimes and maps them together to
+the same stream ID.  This mapping is required because of the limited number of
+streams supported by an SSD.
 
 \begin{figure}[t]
 	\centering
@@ -33,46 +37,54 @@ limited number of streams supported by an SSD.
 
 \vspace{-5pt}
 \subsection{Automatic PC computation}
-As mentioned earlier, a PC is defined as the sum of program counters along the
-execution path of a function call that finally reaches a write-related
-system functions. A function call involves pushing the next program counter,
-which is used as a return address, to the stack
-followed by pushing the frame pointer.
-In general, by using a frame pointer, 
-we are able to back-track the stack frames of the
-process and selectively get return addresses for generating a PC value. 
-For example, 
+As mentioned earlier, a PC is represented by a PC signature which is defined as
+the sum of program counters along the execution path of a function call that
+finally reaches a write-related system function. A function call involves
+pushing the next program counter, which is used as a return address, to the
+stack followed by pushing a frame pointer value.  In general, by using frame
+pointer values, we are able to back-track the stack frames of the process and
+selectively get return addresses for generating a PC signature.  For example,
 Fig.~\ref{fig:getpc}(a) shows the abstracted execution path for flushing data
-of RocksDB and
-Fig.~\ref{fig:getpc}(b) illustrates how a PC
-value is obtained by back-tracking the stack. 
-The PC extractor obtains and accumulates each return address, which is pushed 
-before calling the {\sf write()}, {\sf BuildTable()} and {\sf WriteLevel0Table()}
-functions, by referring the frame pointer which holds the address of the previous 
-frame pointer.
+in RocksDB and Fig.~\ref{fig:getpc}(b) illustrates how a PC signature is obtained
+by back-tracking the stack.  
+Since a frame pointer value in the stack holds the address of the previous
+frame pointer, the PC extractor can easily obtain return addresses and
+accumulate them to compute a PC signature. (The return addresses are pushed
+before calling the {\sf write()}, {\sf BuildTable()} and {\sf
+WriteLevel0Table()} functions.)
 
-Unfortunately, C/C++ compilers often optimize an output code so
-that it does not use a frame register if possible.  One example is a
+
+%The PC extractor obtains and accumulates each
+%return address, which is pushed before calling the {\sf write()}, {\sf
+%BuildTable()} and {\sf WriteLevel0Table()} functions, by referring the frame
+%pointer which holds the address of the previous frame pointer.
+
+%Unfortunately, C/C++ compilers often optimize an output code so
+%that it does not use a frame register if possible.  
+The frame pointer-based approach for computing PC signatures, however, is not
+always possible because modern C/C++ compilers often do not use the frame
+pointer to aggressively minimize the program execution time.
+One example is a
 {\tt -fomit-frame-pointer} option of GCC~\cite{GCC}. 
-While it is effective in saving
-precious resources like CPU registers, this makes it difficult for us to
-back-track return addresses only. One alternative is fully examining
-every word in the stack and finding out ones that point to the code
-segment of the process's virtual address.  
-\begin{comment}
-Modern OSes divide the process's
-virtual address into segments for their purposes, and thus program instructions
-(code) are stored in a specific range of the virtual address space (e.g.,
-{\texttt{0x400000h}} to {\texttt{0x40c000h}} in the
-Linux).  
-\end{comment}	
-If there are words that hold a value belongs to the code
-segment, they are highly likely to be a return address.  
-\begin{comment} % DO NO REMOVE
-Moreover, since the PC extractor is implemented in the kernel, it is not only
-able to access the entire virtual address of a process, but also know the
-address space layout.
-\end{comment}
+%While it is effective in saving
+%precious resources like CPU registers, this makes it difficult for us to
+%back-track return addresses only. 
+Although this option allows the frame pointer to be used as a general-purpose
+register for high performance, it makes very difficult for us to back-track
+return addresses along the call chains.  
+
+In PCStream, we employ a simple but effective workaround for the frame pointer.
+When a write system call is made, we scan the every word in the stack and check
+it belongs to the process's code segment.  If the scanned stack word holds a
+value within the address range of the code segment, we assume that it is a
+return address.  Since scanning the full stack takes too long, we stop the
+stack scanning procedure when a sufficient number of return address candidates
+are found.  In the current version, we stop when 5 return address candidates
+are found.  Although quite ad-hoc, a restricted scan is effective in
+distinguishing different PCs because it is very unlikely that two different PCs
+follow the same execution path up to five caller functions.   In our evaluation
+with a 3.4 GHz CPU machine, the performance overhead of the restricted scan was
+almost negligible, taking only 300-400 $n$sec per write system call.
 
 \begin{figure}[b]
 	\vspace{-15pt}
@@ -87,17 +99,6 @@ address space layout.
 	\label{fig:getpc}
 \end{figure}
 
-Searching the entire stack would require long CPU time. Thus, the
-search process stops when a sufficient number of return addresses are found.
-Currently, this threshold value is set to 5.  In our experiments
-with a 3.4 GHz CPU machine, the search process only takes 300-400 $n$sec per
-write system call, on average, so its overhead is not so huge.
-Fig.~\ref{fig:getpc}(c) illustrates how PC computation works in {\sf PCStream}
-in detail.
-
-
-
-
 \vspace{-5pt}
 \subsection{PC lifetime prediction}
 The prediction of PC lifetimes is rather complicated. 
@@ -105,7 +106,7 @@ The data lifetime of the append-only workload is defined
 from when a write request is issued until the TRIM command~\cite{TRIM} is issued to 
 the corresponding address.
 Before issuing a write request, the lifetime analyzer
-maintains the written time and the address as well as the PC value.
+maintains the written time and the address as well as the PC signature.
 Upon receiving TRIM
 commands destined for those LBAs, the lifetime analyzer is able to measure the
 exact lifetime of those data. 
@@ -119,18 +120,16 @@ so the average of them is used as PC's expected lifetime.
 Our next step is to map a group of PCs with similar lifetimes to an SSD stream.
 This is because of a limited number of stream IDs offered by an SSD. For
 example, SSDs used in FStream~\cite{FStream} and AutoStream~\cite{AutoStream}
-support only 9 and 16 streams, respectively. 
-Since our goal in this work is
-to confirm the feasibility of using the PC for multi-streamed SSDs, 
-we assumed that the number of streams was sufficient to map PCs of 
-an application.
-To properly support multiple PCs in a general setting,
-the PC-to-stream mapper needs to employ a simple clustering algorithm.
-Given an
-available SSD stream number, the clustering algorithm needs to determine
+support only 9 and 16 streams, respectively. To properly group multiple PCs,
+the PC-to-stream mapper employs a simple 1-D clustering algorithm.  For all the
+PCs, the mapper internally builds a 1-D array sorted by PCs' lifetimes.  Given
+an available SSD stream number, it runs the clustering algorithm and determines
 the best arrangement of PCs into different classes.  For adapting to changing
-workloads, re-clustering operations should be regularly performed. 
-(We leave these issues as our future work.)
+workloads, reclustering operations should be regularly performed. Since the
+number of PCs created by applications is not limited, the clustering algorithm
+must be efficient enough to quickly handle many PCs. Our goal in this work is
+to confirm the feasibility of using PCs, so we leave
+those issues as our future work.
 
 \vspace{-5pt}
 \subsection{Two-phase stream assignment}

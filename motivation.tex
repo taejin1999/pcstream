@@ -91,45 +91,38 @@ However, owing to considerable implementation efforts required to modify
 individual applications, this approach is not widely used in practice.
 \end{comment}
 
-In this paper, 
-we argue that a program context 
-is an efficient  general-purpose indicator for 
-separating dominant I/O activities regardless of the type of I/O workloads. 
-Since a PC represents an execution path of an application which invokes 
-write-related system functions such as {\tt write()} and {\tt writev()} 
-in the Linux kernel,  
-we represent the PC by summing program counter values of all the functions 
-along the execution path which leads to a write system functions.
-In RocksDB, for example, dominant I/O activities include logging, 
-flushing and compaction.  
-Since they are invoked through different function-call paths, 
-we can easily identify dominant I/O activities of RocksDB using PCs. 
-For example, Fig.~\ref{fig:getpc}(a) shows an execution path for flushing in RocksDB.  
-The sum of program counter values of Run(), WriteLevel0Table(), and BuildTable() is used to 
-represent the PC for the flushing activity.
-Note that using the program context to distinguish data lifetimes is not new.  
-For example, Ha {\it et al.} proposed a data separation 
-technique based on the program context~\cite{PCHa}.   
-However, their work was neither designed for append-only 
-workloads nor for modern multi-streamed SSDs.
+In this paper, we argue that a program context is an efficient  general-purpose
+indicator for separating dominant I/O activities regardless of the type of I/O
+workloads.  Since a PC represents an execution path of an application which
+invokes write-related system functions such as {\tt write()} and {\tt writev()}
+in the Linux kernel,  we represent the PC by summing program counter values of
+all the functions along the execution path which leads to a write system call.
+In RocksDB, for example, dominant I/O activities include logging, flushing and
+compaction.  Since they are invoked through different function-call paths, we
+can easily identify dominant I/O activities of RocksDB using PCs.  For example,
+Fig.~\ref{fig:getpc}(a) shows an execution path for flushing in RocksDB.  The
+sum of program counter values of \texttt{Run()}, \texttt{WriteLevel0Table()},
+and \texttt{BuildTable()} is used to represent the PC for the flushing
+activity.  Note that using the program context to distinguish data lifetimes is
+not new.  For example, Ha {\it et al.} proposed a data separation technique
+based on the program context~\cite{PCHa}.   However, their work was neither
+designed for append-only workloads nor for modern multi-streamed SSDs.
 
-In order to validate our hypothesis that PCs can be useful for predicting 
-lifetimes by distinguishing dominant I/O activities, 
-we conducted experiments using RocksDB, comparing the accuracy of 
-identifying dominant I/O activities using two different methods.
-First, we manually identified dominant I/O activities by inspecting 
-the source code. Second, we automatically decided dominant I/O 
-activities by extracting PCs for write-related system functions. 
-Fig.~\ref{fig:types_and_PCs} illustrates two dominant I/O activities 
-matched between two methods.   
-As shown in Fig.~\ref{fig:types_and_PCs}(a) and~\ref{fig:types_and_PCs}(b), 
-the logging activity of RocksDB is correctly identified by two methods.  
-Furthermore, from the logging-activity PC, we can clearly observe that data 
-written from the PC are short-lived.   
-Similarly, from Fig.~\ref{fig:types_and_PCs}(c) and~\ref{fig:types_and_PCs}(d), 
-we observe that data written from the flushing activity PC behaves in a different fashion.  
-For example, data from the flushing activity PC lives 
-a lot longer than one from the logging activity PC.
+In order to validate our hypothesis that PCs can be useful for predicting
+lifetimes by distinguishing dominant I/O activities, we conducted experiments
+using RocksDB, comparing the accuracy of identifying dominant I/O activities
+using two different methods.  First, we manually identified dominant I/O
+activities by inspecting the source code. Second, we automatically decided
+dominant I/O activities by extracting PCs for write-related system functions.
+Fig.~\ref{fig:types_and_PCs} illustrates two dominant I/O activities matched
+between two methods.   As shown in Fig.~\ref{fig:types_and_PCs}(a)
+and~\ref{fig:types_and_PCs}(b), the logging activity of RocksDB is correctly
+identified by two methods.  Furthermore, from the logging-activity PC, we can
+clearly observe that data written from the PC are short-lived.   Similarly,
+from Fig.~\ref{fig:types_and_PCs}(c) and~\ref{fig:types_and_PCs}(d), we observe
+that data written from the flushing-activity PC behaves in a different fashion.
+For example, data from the flushing-activity PC remain valid a lot longer than
+those from the logging-activity PC.
 
 \begin{figure}[!t]
 \centering
