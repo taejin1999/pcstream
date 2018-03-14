@@ -1,48 +1,25 @@
 \section{Experimental Results}
-For our evaluation, we implemented PC extractor module at the 
-system call layer 
-and the lifetime analyzer and stream mapper module 
-at the block device layer in the Linux kernel version 4.5.
-We also implemented manual technique~\cite{MultiStream}, 
-Autostream~\cite{AutoStream}, and
-baseline which uses only one stream.
-to compare them with {\sf PCStream}.
-For a detailed analysis, {\sf PCStream} is also compared to {\sf PCStream--}
-which excludes the second phase substream assignment 
-to see the effectiveness PC-based data separation only.
 
-In order to evaluate the effectiveness of {\sf PCStream},
-we conduct experiments on two enviroments; the first one is 
-for the emulation.
-We implemented the multi-stream feature and substream concept
-to the in-house SSD emulator
-based on the open flash development platform~\cite{AMF}.
-The number of streams was set to 8 for the evaluation.
-The SSD emulator was 12 GB with four channels with four ways, and 
-the number of blocks per parallel unit was 512 and
-the number of pages per block was 384 with 4KB-sized page.
-Due to the limited capacity of the emulator, 
-we scaled down the configuration of RocksDB.
-The base file size is set to 8 MB
-with an 8KB-sized key-value pair and the number of levels was set to 4.
-However, the size of level multiplier is remained to be 10 as the general setting,
-which means the size of the next level is 10 times larger than the previous level,
-to maintain the level access patterns during the compaction.
+For our experiments, we have implemented \textsf{PCStream} in the Linux kernel
+4.5.  For objective evaluation, we compared \textsf{PCStream} with three
+existing schemes: \textsf{Baseline}, \textsf{Manual}~\cite{MultiStream}, and
+\textsf{AutoStream}~\cite{AutoStream}.  \textsf{Baseline} stands for a legacy
+SSD that does not support a multi-stream feature. \textsf{Manual} is a RocksDB
+implementation which is manually optimized for multi-streamed SSDs.
+\textsf{AutoStream} is an LBA-based data separation technique which is
+implemented at the block driver layer. To understand the impact of the
+two-phase assignment, in addition, we compared \textsf{PCStream} with
+\textsf{PCStream$^{*}$} which excluded the two-phase assignment feature.
 
-The second one is for Samsung PM963 480GB SSD (with 8 streams).
-As a warming workload, we wrote a single file sequentially to fill 90\%
-of logical device capacity, to ensure that 90\% of logical space stays valid
-throughout the test.
+For benchmarks, we have used three scenarios of \texttt{db\_bench} of RocksDB:
+Update-Random (\texttt{UR}), Append-Random (\texttt{AR}), and Fill-Random
+(\texttt{FR}) scenarios.  For key-value pairs already stored in the SSD,
+\texttt{UR} updates values for random keys, creating many
+read-modify-writes in the SSD.  \texttt{AR} is similar to \texttt{UR}, except
+that it performs the update of values for growing keys. \texttt{FR} writes
+key-value pairs to the SSD in a random key order.
 
-For benchmarks, we used three scenarios of db\_bench of RocksDB.
-The first one is the update random scenario, {\tt UR}, which read-modify-writes for random keys. 
-The second one is append random scenario, {\tt AR}, which read-modify-writes with growing values.
-The last one is the fill random scenario, {\tt FR}, which writes values in random key order and 
-shows higher write ratio than others.
-The number of keys were set to about 900,000 for the emulator and about 90,000,000 for
-the SSD.
-
-\subsection{Results on the emulator}
+\subsection{Experiments with the emulator}
 
 \begin{figure}[t]
 	\centering
@@ -53,21 +30,30 @@ the SSD.
 	\vspace{-15pt}
 \end{figure}
 
-We compared WAF of the existing techniques with {\sf PCStream}
-for each scenario and the result is shown in Fig.~\ref{fig:result_emul}. 
-As shown in Fig.~\ref{fig:result_emul}, 
-{\sf PCStream--} reduces WAF by up to 30\% and by 20\% on average
-over the AutoStream. 
-The result shows that separating short-lived data such as log or flush
-using PC was quite effectvive in reducing WAF.
-Moreover, {\sf PCStream} showed similar WAF to the manual technique,
-reducing WAF by up to 38\% and by 30\% on average
-over the AutoStream.
-The additional benefit comes from separating
-long-lived data of the compaction PC during the
-second phase assignment.
+We carried out a set of experiments using an SSD emulator which is based on the
+open flash development platform~\cite{AMF}.  The SSD emulator emulates the
+behaviors of an SSD using host DRAM in the kernel level. Thus, it not only
+allows us to easily add new features, but enables to analyze detailed internal
+activities of an SSD.  We enhanced the original emulator so that it supported a
+multi-streamed feature as well as the two-phase stream assignment.  The number
+of streams supported by the emulator was 8.  The SSD emulator provided 12 GB
+capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of
+which was composed of 384 4-KB pages.  
 
-\subsection{Results on the SSD}
+We compared WAF of the existing techniques with {\sf PCStream} for the three
+scenarios, and the result is shown in Fig.~\ref{fig:result_emul}.  As shown in
+Fig.~\ref{fig:result_emul}, {\sf PCStream$^*$} reduced WAF by up to 30\% over
+\textsf{AutoStream}.  The result shows that separating short-lived data (e.g.,
+log and flush) from long-lived one (e.g., compaction) using PC was quite
+effective in reducing WAF.  Moreover, {\sf PCStream} showed similar WAF to
+\textsf{Manual}, reducing it by up to 38\% over \textsf{AutoStream}.  This
+additional benefit came from isolating long- and short-lived data in separate
+blocks through the two-phase assignment at the SSD even if they belonged to the
+same compaction PC.
+
+\textcolor{red}{(TODO: please add text for new exp here)}
+
+\subsection{Experiments with the SSD}
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=1\linewidth]{figure/result_ssd}
@@ -77,13 +63,18 @@ second phase assignment.
 	\vspace{-15pt}
 \end{figure}
 
-Since we can not implement the second-phase substream assignment
-for the SSD, we compare {\sf PCStream--} only for the SSD.
-As shown in Fig.~\ref{fig:result_SSD}, 
-{\sf PCStream--} reduces the average WAF by 30\%  over the AutoStream. 
-Although AutoStream on the SSD works better than on the emulator,
-{\sf PCStream--} still outperforms AutoStream,
-thus showing the effectiveness of the PC-based 
-data separation.
-If the program is written in more PC-friendly manner, 
-{\sf PCStream} will be able to get closer WAF to manual.
+In order to confirm the feasibility of \textsf{PCStream}, we also have
+conducted experiments using Samsung's PM963 480GB SSD that supports 8 streams.
+Since it was impossible to implement the two-phase stream assignment in the
+commercial SSD firmware, we evaluated {\sf PCStream$^*$} only.  To warm up the
+SSD before running benchmarks, we filled up 90\% of the SSD capacity with valid
+data.
+
+As illustrated in Fig.~\ref{fig:result_SSD}, {\sf PCStream$^*$} reduced WAF by
+30\% over \textsf{AutoStream} on average. Even though \textsf{AutoStream} on
+the SSD performed better than on the emulator, {\sf PCStream$^*$} still
+outperformed \textsf{AutoStream}, confirming the feasibility of the PC-based
+data separation on real-world SSDs.  We also expect that {\sf PCStream} would
+be able to achieve WAF closer to \textsf{Manual} once the two-phase assignment
+is applied.
+
