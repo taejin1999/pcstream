@@ -11,8 +11,11 @@ Our experimental results show that {\sf PCStream} can reduce WAF by up to 38\% o
 automatic technique.
 
 The current version of {\sf PCStream} can be extended in several directions.  
-For example, {\sf PCStream} should be improved in its PC clustering method 
-so that it can work effectively even when there are more PCs than the number of streams.  
-We also plan to evaluate {\sf PCStream} (not {\sf PCStream}$^{--}$) on real SSDs 
-by implementing the two-phase stream assignment algorithm inside an FTL.
+For example, we plan to optimize the PC clustering method so that
+multiple PCs can be better clustered when the number of PCs significantly
+outnumbers the number of streams.  
+%For example, {\sf PCStream} should be improved in its PC clustering method 
+%so that it can work effectively even when there are more PCs than the number of streams.  
+%We also plan to evaluate {\sf PCStream} (not {\sf PCStream}$^{--}$) on real SSDs 
+%by implementing the two-phase stream assignment algorithm inside an FTL.
 

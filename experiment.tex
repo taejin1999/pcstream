@@ -3,11 +3,11 @@ For our evaluation, we implemented PC extractor module at the
 system call layer 
 and the lifetime analyzer and stream mapper module 
 at the block device layer in the Linux kernel version 4.5.
-We also implemented manual technique~\cite{MultiStream}, 
-Autostream~\cite{AutoStream}, and
-baseline which uses only one stream.
+We also implemented {\sf manual} technique~\cite{MultiStream}, 
+{\sf Autostream}~\cite{AutoStream}, and
+{\sf baseline} which uses only one stream.
 to compare them with {\sf PCStream}.
-For a detailed analysis, {\sf PCStream} is also compared to {\sf PCStream}$^{--}$
+For a detailed analysis, {\sf PCStream} is also compared to {\sf PCStream}$^{*}$
 which excludes the second phase substream assignment 
 to see the effectiveness PC-based data separation only.
 
@@ -57,12 +57,12 @@ the SSD.
 We compared WAF of the existing techniques with {\sf PCStream}
 for each scenario and the result is shown in Fig.~\ref{fig:result_emul}. 
 As shown in Fig.~\ref{fig:result_emul}, 
-{\sf PCStream}$^{--}$ reduces WAF by 25\% on average over the AutoStream. 
+{\sf PCStream}$^{*}$ reduces WAF by 25\% on average over the {\sf Autostream}. 
 The result shows that separating short-lived data such as log or flush
 using PC was quite effectvive in reducing WAF.
-Moreover, {\sf PCStream} showed similar WAF to the manual technique,
+Moreover, {\sf PCStream} showed similar WAF to the {\sf manual} technique,
 reducing WAF by 30\% on average
-over the AutoStream.
+over {\sf Autostream}.
 The additional benefit comes from separating
 long-lived data of the compaction PC during the
 second phase assignment.
@@ -80,16 +80,16 @@ second phase assignment.
 %Since we can not implement the second-phase substream assignment for the SSD, 
 We evaluated the efficiency of {\sf PCStream} on real SSDs using Samsung PM963 SSDs with 8 streams.  
 Since it was not possible to modify the PM963's firmware, 
-we used {\sf PCStream}$^{--}$ in our evaluation.
+we used {\sf PCStream}$^{*}$ in our evaluation.
 %we compare {\sf PCStream}$^{--}$ only for the SSD.
 As shown in Fig.~\ref{fig:result_SSD}, 
-{\sf PCStream}$^{--}$ reduces the average WAF by 26\% over AutoStream. 
-There exists large WAF gaps between {\sf PCStream}$^{--}$ and the manually optimized case. 
+{\sf PCStream}$^{*}$ reduces the average WAF by 26\% over {\sf Autostream}. 
+There exists large WAF gaps between {\sf PCStream}$^{*}$ and the manually optimized case. 
 However, if the substream is properly supported during garbage collection, 
-we believe that {\sf PCStream} can similar WAF vlaues as the manual case. 
-Although {\sf PCStream}$^{--}$ still outperforms AutoStream, 
+we believe that {\sf PCStream} can similar WAF vlaues as the {\sf manual} case. 
+Although {\sf PCStream}$^{*}$ still outperforms {\sf Autostream}, 
 a performance gap is smaller over that in the emulated SSD environment. 
-It is difficult to pinpoint why AutoStream works better in PM963 over in the emulated SSD, 
+It is difficult to pinpoint why {\sf Autostream} works better in PM963 over in the emulated SSD, 
 but we suspect that some internal features of PM963 such as a large block size or some implementation details of streams might be related. 
 %Although AutoStream on the SSD works better than on the emulator, {\sf PCStream}$^{--}$ still outperforms AutoStream, thus showing the effectiveness of the PC-based data separation.
 %If the program is written in more PC-friendly manner, {\sf PCStream} will be able to get closer WAF to manual.
