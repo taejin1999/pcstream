@@ -1,8 +1,8 @@
 \vspace{-7pt}
-\section{Design ofPCStream}
+\section{Design of \textsf{\normalsize PCStream}}
 \vspace{-5pt}
-We describe in detail the proposed automatic stream management technique, \textsf{\small 
-PCStream}.  We first explain how we automatically extracts PCs during
+We describe in detail the proposed automatic stream management technique, 
+\textsf{\small PCStream}.  We first explain how we automatically extract PCs during
 run time and describe how multiple PCs are mapped to streams in an SSD.
 In order to mitigate the side effect of a few outlier PCs with large lifetime variances, 
 we introduce `substreams' based on a two-phase
@@ -130,10 +130,10 @@ We take the average lifetime as the PC's lifetime.
 \vspace{-10pt}
 \subsection{Mapping PCs to SSD streams}
 \vspace{-5pt}
-The last step inPCStream is to map
+The last step in \textsf{\small PCStream} is to map
 a group of PCs with similar lifetimes to an SSD stream.
 This is because each SSD supports a limited number of stream IDs. For
-example, SSDs used in FStream~\cite{FStream} and AutoStream~\cite{AutoStream}
+example, SSDs used in \textsf{\small FStream}~\cite{FStream} and \textsf{\small AutoStream}~\cite{AutoStream}
 support only 9 and 16 streams, respectively. To properly group multiple PCs,
 the PC-to-stream mapper employs a simple 1-D clustering algorithm.  For all the
 PCs, the mapper internally builds a 1-D array sorted by PCs' lifetimes.  Given
