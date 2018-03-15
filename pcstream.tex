@@ -1,4 +1,6 @@
+\vspace{-7pt}
 \section{Design of PCStream}
+\vspace{-5pt}
 We describe in detail the proposed automatic stream management technique, {\sf
 PCStream}.  We first explain a mechanism that automatically extracts PCs during
 run time, and then describe how multiple PCs are assigned to streams which are
@@ -10,6 +12,7 @@ ill-behaving PCs with large lifetime variances.
 %system call handler, computes a PC signature (i.e., a sum of program counter
 %values) for each write-related system function. 추가 동작 설명..
 
+
 Fig.~\ref{fig:architecture} shows an overall organization of {\sf PCStream}.
 \textit{The PC extractor module}, which is implemented in the Linux kernel as
 part of a system call handler, computes a PC signature (i.e., a sum of program
@@ -20,23 +23,16 @@ in an inode data structure of a file system (modified for \textsf{PCStream})
 and is delivered to \textit{the lifetime analyzer module} which estimates
 expected lifetimes of data belonging to a given PC in the block device level.
 In order to efficiently detect the end of data lifetime in append-only
-workloads, the lifetime analyzer also intercepts TRIM~\cite{TRIM} requests from
-a file system.  Based on the lifetime information, \textit{the PC-to-stream
+workloads, the lifetime analyzer also intercepts TRIM~\cite{TRIM} requests. %from a file system.  %shane part
+Based on the lifetime information, \textit{the PC-to-stream
 mapper module} clusters PCs with similar lifetimes and maps them together to
 the same stream ID.  This mapping is required because of the limited number of
 streams supported by an SSD.
 
-\begin{figure}[t]
-	\centering
-	\includegraphics[width=0.6\linewidth]{figure/architecture4}
-	\vspace{-10pt}
-	\caption{An overall architecture of {\sf PCStream}.}
-	\label{fig:architecture}
-	\vspace{-15pt}
-\end{figure}
 
-\vspace{-5pt}
+\vspace{-10pt}
 \subsection{Automatic PC computation}
+%\vspace{-5pt}
 As mentioned earlier, a PC is represented by a PC signature which is defined as
 the sum of program counters along the execution path of a function call that
 finally reaches a write-related system function. A function call involves
@@ -52,6 +48,17 @@ frame pointer, the PC extractor can easily obtain return addresses and
 accumulate them to compute a PC signature. (The return addresses are pushed
 before calling the {\sf write()}, {\sf BuildTable()} and {\sf
 WriteLevel0Table()} functions.)
+
+
+\begin{figure}[t]
+	\centering
+	\vspace{-7pt}
+	\includegraphics[width=0.6\linewidth]{figure/architecture4}
+	\vspace{-10pt}
+	\caption{An overall architecture of {\sf PCStream}.}
+	\label{fig:architecture}
+	\vspace{-15pt}
+\end{figure}
 
 
 %The PC extractor obtains and accumulates each
@@ -86,8 +93,8 @@ follow the same execution path up to five caller functions.   In our evaluation
 with a 3.4 GHz CPU machine, the performance overhead of the restricted scan was
 almost negligible, taking only 300-400 $n$sec per write system call.
 
-\begin{figure}[b]
-	\vspace{-15pt}
+\begin{figure}[t]
+%	\vspace{-10pt}
 	\centering
 	\subfloat[An abstracted execution path for flushing data.]{\includegraphics[width=0.45\textwidth]{figure/getpc_1}}  
 	\vspace{-10pt}
@@ -95,11 +102,14 @@ almost negligible, taking only 300-400 $n$sec per write system call.
 	\subfloat[with the frame pointer.]{\includegraphics[width=0.245\textwidth]{figure/getpc_2}}
 	\subfloat[without the frame pointer.]{\includegraphics[width=0.25\textwidth]{figure/getpc_3}}
 	\vspace{-8pt}
-	\caption{An example execution path and its PC extraction methods.}
+	%\caption{An example execution path and its PC extraction methods.}
+	\caption{An example execution path and its PC extraction.} %shane part
 	\label{fig:getpc}
+	\vspace{-20pt}
 \end{figure}
 
-\vspace{-5pt}
+
+\vspace{-10pt}
 \subsection{PC lifetime prediction}
 The prediction of PC lifetimes is rather complicated. 
 The data lifetime of the append-only workload is defined 
@@ -117,6 +127,7 @@ so the average of them is used as PC's expected lifetime.
 
 \vspace{-5pt}
 \subsection{Mapping PCs to SSD streams}
+\vspace{-5pt}
 Our next step is to map a group of PCs with similar lifetimes to an SSD stream.
 This is because of a limited number of stream IDs offered by an SSD. For
 example, SSDs used in FStream~\cite{FStream} and AutoStream~\cite{AutoStream}
@@ -133,20 +144,8 @@ those issues as our future work.
 
 \vspace{-5pt}
 \subsection{Two-phase stream assignment}
-\begin{figure}[!t]
-\centering
-\hspace{2pt}
-\subfloat[compaction: all levels]{\includegraphics[width=0.23\textwidth]{figure/pc_3b}}
-\subfloat[compaction: L2]{\includegraphics[width=0.23\textwidth]{figure/type_4b}}  % data from 4/03040047
-\hfill
-\vspace{-10pt}
-\subfloat[compaction: L3]{\includegraphics[width=0.23\textwidth]{figure/type_5b}}
-\subfloat[compaction: L4] {\includegraphics[width=0.23\textwidth]{figure/type_6b}}
-\vspace{-10pt}
-\caption{The lifetime distribution of the compaction activity.} 
-\label{fig:compaction}
-\vspace{-15pt}
-\end{figure}
+\vspace{-5pt}
+
 
 While the PC can be used as a useful indicator that determines the lifetime of
 data, we also observe that the same PC could generate data with various
@@ -188,6 +187,23 @@ Figs.~\ref{fig:compaction}(b)-(d) illustrate the lifetimes
 of manually identified data.
 Data from L1 are likely to have shorter lifetime, while L4 has generally
 long-lived data.
+
+\begin{figure}[!t]
+\centering
+\vspace{-7pt}
+\hspace{2pt}
+\subfloat[compaction: all levels]{\includegraphics[width=0.23\textwidth]{figure/pc_3b}}
+\subfloat[compaction: L2]{\includegraphics[width=0.23\textwidth]{figure/type_4b}}  % data from 4/03040047
+\hfill
+\vspace{-10pt}
+\subfloat[compaction: L3]{\includegraphics[width=0.23\textwidth]{figure/type_5b}}
+\subfloat[compaction: L4] {\includegraphics[width=0.23\textwidth]{figure/type_6b}}
+\vspace{-5pt}
+%\caption{The lifetime distribution of the compaction activity.} 
+\caption{Lifetime distribution of the compaction activity.} %shane part
+\label{fig:compaction}
+\vspace{-15pt}
+\end{figure}
 
 In order to automatically assign data from the same PC to different SSD streams
 according to their lifetimes, we propose a two-phase method that decides SSD

@@ -1,5 +1,7 @@
+\vspace{-10pt}
 \section{Introduction}
 \label{sec:intro}
+\vspace{-5pt}
 Multi-streamed SSDs provide a special mechanism,
 called streams, for a host system to prevent data with different lifetimes 
 from being mixed into the same block~\cite{T10, MultiStream}.
@@ -72,7 +74,7 @@ from being mixed with future short-lived data of the stream {\it sID}.
 
 In order to evaluate the effectiveness of {\sf PCStream}, 
 we have implemented {\sf PCStream}
-in the Linux kernel (v. 4.5) and measured write amplification factor (WAF) values 
+in the Linux kernel (ver. 4.5) and measured write amplification factor (WAF) values 
 using RocksDB on a Samsung PM963 SSD 
 as well as an SSD emulator.
 Our experimental results show that {\sf PCStream}
