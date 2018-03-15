@@ -1,5 +1,8 @@
+\vspace{-10pt}
 \section{Basic Idea}
+\vspace{-5pt}
 \subsection{Fallacy: LBA-based lifetime prediction}
+%\vspace{-5pt}
 Many existing data separation techniques such as~\cite{AutoStream, HotCold} 
 estimate the data lifetime based on the update frequency of LBAs.  
 For example, AutoStream~\cite{AutoStream} assumes that, if
@@ -9,17 +12,6 @@ approach, however, does not work well with recent data-intensive
 applications where a majority of
 new data are written in an append-only manner.  
 
-\begin{figure}[t]
-	\centering
-	\subfloat[Lifetime patterns over LBAs]{\includegraphics[width=0.25\textwidth]{figure/lba_lifetime2}}  % data from 0/03031641
-	\subfloat[Lifetime patterns over time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk2}}
-	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
-	\vspace{-10pt}
-	\caption{
-		Lifetime distributions over LBAs and logical times.}
-		\label{fig:lba_lifetime}
-	\vspace{-15pt}
-\end{figure}
 
 
 In order to illustrate a mismatch between an LBA-based predictor and 
@@ -55,18 +47,32 @@ followed by a rapid drop around the logical time 600.
 Our illustration using RocksDB strongly suggests that under append-only
 workloads, LBAs are not useful in deciding data lifetimes.
 
-\vspace{-5pt}
+\vspace{-10pt}
 \subsection{Program context as a lifetime predictor}
+%\vspace{-5pt}
 In developing {\sf PCStream}, our key insight was that in most applications 
 (regardless of their I/O workload characteristics), 
 a few dominant I/O activities exist for an application
 and each dominant I/O activity   
-represents the application's important I/O context (e.g., for logging or for flushing).
+represents the application's important I/O context (e.g., for logging or for flushing). 
 Furthermore, most dominant I/O activities tend to have distinct data lifetime patterns.
 In order to distinguish data by their lifetimes, therefore, 
 it is important to effectively distinguish dominant I/O activities from each other.  
 For example, in update workloads, 
 LBAs alone were effective in separating dominant I/O activities.  
+
+\begin{figure}[t]
+	\centering
+	\vspace{-7pt}
+	\subfloat[Lifetime patterns over LBAs]{\includegraphics[width=0.25\textwidth]{figure/lba_lifetime2}}  % data from 0/03031641
+	\subfloat[Lifetime patterns over time]{\includegraphics[width=0.22\textwidth]{figure/lifetime_in_chunk2}}
+	%\includegraphics[width=0.9\linewidth]{figure/lba_lifetime} 
+	%\vspace{-10pt}
+	\vspace{-5pt}
+	\caption{Lifetime distributions over addresses and times.} %shane part
+		\label{fig:lba_lifetime}
+	\vspace{-17pt}
+\end{figure}
 
 \begin{comment}
 In developing PCStream, we started from a simple question: 
@@ -108,6 +114,23 @@ not new.  For example, Ha {\it et al.} proposed a data separation technique
 based on the program context~\cite{PCHa}.   However, their work was neither
 designed for append-only workloads nor for modern multi-streamed SSDs.
 
+\begin{figure}[b]
+\centering
+\vspace{-27pt}
+\hfill
+	\subfloat[Logging (PC)]{\includegraphics[width=0.21\textwidth]{figure/type_1b}} % data from 4/03031953 
+	\subfloat[Logging (manual)]{\includegraphics[width=0.21\textwidth]{figure/pcID_2b}}
+\hfill
+\vspace{-10pt}
+	\subfloat[Flushing (PC)] {\includegraphics[width=0.21\textwidth]{figure/type_3b}}
+	\subfloat[Flushing (manual)]{\includegraphics[width=0.21\textwidth]{figure/pcID_3b}}
+\vspace{-10pt}
+\caption{Data lifetime distributions of different PCs.} 
+\label{fig:types_and_PCs}
+%\vspace{-15pt}
+\end{figure}
+
+
 In order to validate our hypothesis that PCs can be useful for predicting
 lifetimes by distinguishing dominant I/O activities, we conducted experiments
 using RocksDB, comparing the accuracy of identifying dominant I/O activities
@@ -124,19 +147,4 @@ that data written from the flushing-activity PC behaves in a different fashion.
 For example, data from the flushing-activity PC remain valid a lot longer than
 those from the logging-activity PC.
 
-\begin{figure}[!t]
-\centering
-\vspace{-10pt}
-\hfill
-	\subfloat[Logging (PC)]{\includegraphics[width=0.21\textwidth]{figure/type_1b}} % data from 4/03031953 
-	\subfloat[Logging (manual)]{\includegraphics[width=0.21\textwidth]{figure/pcID_2b}}
-\hfill
-\vspace{-10pt}
-	\subfloat[Flushing (PC)] {\includegraphics[width=0.21\textwidth]{figure/type_3b}}
-	\subfloat[Flushing (manual)]{\includegraphics[width=0.21\textwidth]{figure/pcID_3b}}
-\vspace{-10pt}
-\caption{Data lifetime distributions of different PCs.} 
-\label{fig:types_and_PCs}
-\vspace{-15pt}
-\end{figure}
 

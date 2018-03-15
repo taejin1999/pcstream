@@ -1,4 +1,6 @@
+\vspace{-5pt}
 \section{Experimental Results}
+\vspace{-5pt}
 
 For our experiments, we have implemented \textsf{PCStream} in the Linux kernel
 4.5.  For objective evaluation, we compared \textsf{PCStream} with three
@@ -19,11 +21,13 @@ read-modify-writes in the SSD.  \texttt{AR} is similar to \texttt{UR}, except
 that it performs the update of values for growing keys. \texttt{FR} writes
 key-value pairs to the SSD in a random key order.
 
+\vspace{-5pt}
 \subsection{Experiments with an SSD emulator}
+\vspace{-5pt}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.9\linewidth]{figure/result_emul}
+	\includegraphics[width=0.8\linewidth]{figure/result_emul}
 	\vspace{-10pt}
 %	\caption{The WAF comparison on the emulator.}
 	\caption{A comparison of WAF on the SSD emulator.}
@@ -43,12 +47,13 @@ which was composed of 384 4-KB pages.
 
 \begin{figure}[b]
 	\centering
-	\includegraphics[width=0.9\linewidth]{figure/streamlifetime}
+	\vspace{-15pt}
+	\includegraphics[width=0.8\linewidth]{figure/streamlifetime}
 	\vspace{-10pt}
 %	\caption{The WAF comparison on the emulator.}
 	\caption{A lifetime distribution of stream data}
 	\label{fig:streamlifetime}
-	\vspace{-15pt}
+
 \end{figure}
 
 We compared WAF of the existing techniques with {\sf PCStream} for the three
@@ -77,11 +82,13 @@ The long-lived data moved to a substream by {\sf PCStream} did not erased
 during the execution so the lifetime of data in the substream, e.g. S6, S7,
 can not be measured.
 
+\vspace{-5pt}
 \subsection{Experiments with a real-world SSD}
+\vspace{-5pt}
 
 \begin{figure}[t]
 	\centering
-	\includegraphics[width=0.9\linewidth]{figure/result_ssd}
+	\includegraphics[width=0.8\linewidth]{figure/result_ssd}
 	\vspace{-10pt}
 	\caption{A comparison of WAF on PM963.}
 	\label{fig:result_SSD}
