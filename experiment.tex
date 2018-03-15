@@ -4,14 +4,14 @@
 
 \begin{figure*}[t]
 	\centering
-	\subfloat[\scriptsize{A comparison of WAF on the SSD emulator}.]{\label{fig:result_emul}\includegraphics[width=0.33\textwidth]{figure/result_emul}}
-	\subfloat[\scriptsize{A comparison of WAF on PM963}.]{\label{fig:result_ssd}\includegraphics[width=0.33\textwidth]{figure/result_ssd}}
-	\subfloat[\scriptsize{A lifetime comparison of each stream}.]{\label{fig:streamlifetime}\includegraphics[width=0.33\textwidth]{figure/streamlifetime}}
-	\vspace{-10pt}
+	\includegraphics[width=1\textwidth]{figure/expfig}
+%	\subfloat[\scriptsize{A comparison of WAF on the SSD emulator}.]{\label{fig:result_emul}\includegraphics[width=0.33\textwidth]{figure/result_emul}}
+%	\subfloat[\scriptsize{A comparison of WAF on PM963}.]{\label{fig:result_ssd}\includegraphics[width=0.33\textwidth]{figure/result_ssd}}
+%	\subfloat[\scriptsize{A lifetime comparison of each stream}.]{\label{fig:streamlifetime}\includegraphics[width=0.33\textwidth]{figure/streamlifetime}}
+%	\vspace{-10pt}
 %	\caption{The WAF comparison on the emulator.}
-	\caption{???.}
 	\label{fig:exp}
-	\vspace{-15pt}
+	\vspace{-35pt}
 \end{figure*}
 
 For our experiments, we have implemented \textsf{PCStream} in the Linux kernel
@@ -80,8 +80,8 @@ capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of
 which was composed of 384 4-KB pages.  
 
 We compared WAF of the existing techniques with {\sf PCStream} for the three
-scenarios, and the result is shown in Fig.~\ref{fig:result_emul}.  As shown in
-Fig.~\ref{fig:result_emul}, {\sf PCStream$^*$} reduced WAF by up to 30\% over
+scenarios, and the result is shown in Fig. 6.  As shown in
+Fig. 6, {\sf PCStream$^*$} reduced WAF by up to 30\% over
 \textsf{AutoStream}.  The result shows that separating short-lived data (e.g.,
 log and flush) from long-lived one (e.g., compaction) using PC was quite
 effective in reducing WAF.  Moreover, {\sf PCStream} even showed similar WAF to
@@ -92,9 +92,9 @@ same compaction PC.
 
 In order to analyze the improvement made by {\sf PCStream}, 
 we measured the data lifetime of each stream for the {\tt UR} scenario.
-Fig.~\ref{fig:streamlifetime} shows average, 75p, and 25p of data liftime 
+Fig. 7 shows average, 75p, and 25p of data liftime 
 for each stream.
-As shown in Fig.~\ref{fig:streamlifetime}, data lifetimes of stream 0 to 5
+As shown in Fig. 7, data lifetimes of stream 0 to 5
 in \textsf{Manual} are gathered in a narrow range so data lifetime in
 the same is quite similar.
 However, data lifetime of streams in \textsf{AutoStream} shows relatively large difference
@@ -102,7 +102,7 @@ However, data lifetime of streams in \textsf{AutoStream} shows relatively large 
 the hot stream.
 On the other hand, {\sf PCStream$^*$} can identify short-lived data from 
 several dominant I/O activities as mentioned 
-in section 2, for example, stream 0 and 1 in the Fig.~\ref{fig:streamlifetime}.
+in section 2, for example, stream 0 and 1 in the Fig. 7.
 \textsf{PCStream} can further separate long-lived data of several streams 
 (e.g., stream 3 and 4)
 by moving their data to substreams (e.g., stream 5 and 6, respectively). 
@@ -119,7 +119,7 @@ commercial SSD firmware, we evaluated {\sf PCStream$^*$} only.  To warm up the
 SSD before running benchmarks, we filled up 90\% of the SSD capacity with valid
 data.
 
-As illustrated in Fig.~\ref{fig:result_SSD}, {\sf PCStream$^*$} reduced WAF by
+As illustrated in Fig. 8, {\sf PCStream$^*$} reduced WAF by
 30\% over \textsf{AutoStream} on average.  There were large WAF gaps between
 \textsf{PCStream$^{*}$} and the manually optimized case.  If the substream was
 properly supported during GC, we believe that \textsf{PCStream} could show
