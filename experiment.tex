@@ -1,4 +1,4 @@
-\vspace{-25pt}
+\vspace{-10pt}
 \section{Experimental Results}
 \vspace{-5pt}
 
@@ -21,7 +21,7 @@ read-modify-writes in the SSD.  \texttt{AR} is similar to \texttt{UR}, except
 that it performs the update of values for growing keys. \texttt{FR} writes
 key-value pairs to the SSD in a random key order.
 
-\vspace{-5pt}
+\vspace{-10pt}
 \subsection{Experiments with an SSD emulator}
 %\vspace{-5pt}
 
@@ -66,7 +66,10 @@ additional benefit came from isolating long- and short-lived data in separate
 blocks through the two-phase assignment at the SSD even if they belonged to the
 same compaction PC.
 
+<<<<<<< HEAD
 %\textcolor{red}{(TODO: please add text for new exp here)}
+=======
+>>>>>>> 4b07409f4196627008e20e63972b6fd4735eadfd
 In order to analyze the improvement made by {\sf PCStream}, 
 we measured the data lifetime of each stream for the {\tt UR} scenario.
 Fig.~\ref{fig:streamlifetime} shows average, 75p, and 25p of data liftime 
@@ -76,12 +79,13 @@ in \textsf{Manual} are gathered in a narrow range so data lifetime in
 the same is quite similar.
 However, data lifetime of streams in \textsf{AutoStream} shows relatively large difference
 \textsf{AutoStream} does not notice when long-lived data is written to
-the hot stream, e.g, stream 3.
+the hot stream.
 On the other hand, {\sf PCStream$^*$} can identify short-lived data from 
 several dominant I/O activities as mentioned 
-in section 2, e.g., S0 and S2 in the Fig.~\ref{fig:streamlifetime}.
-\textsf{PCStream} can further separate long-lived data of several streams, e.g. S1 and S3, 
-by moving their data to substreams, e.g., S5 and S6, respectively. 
+in section 2, for example, stream 0 and 1 in the Fig.~\ref{fig:streamlifetime}.
+\textsf{PCStream} can further separate long-lived data of several streams 
+(e.g., stream 3 and 4)
+by moving their data to substreams (e.g., stream 5 and 6, respectively). 
 
 \vspace{-10pt}
 \subsection{Experiments with a real-world SSD}

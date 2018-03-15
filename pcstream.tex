@@ -2,12 +2,11 @@
 \section{Design of PCStream}
 \vspace{-5pt}
 We describe in detail the proposed automatic stream management technique, {\sf
-PCStream}.  We first explain a mechanism that automatically extracts PCs during
-run time, and then describe how multiple PCs are assigned to streams which are
-delivered to an SSD.  Finally, we introduce `substreams' based on a two-phase
-stream assignment technique, which effectively mitigates the effect of a few
-ill-behaving PCs with large lifetime variances.
-
+PCStream}.  We first explain how we automatically extracts PCs during
+run time and describe how multiple PCs are mapped to streams in an SSD.
+In order to mitigate the side effect of a few outlier PCs with large lifetime variances, 
+we introduce `substreams' based on a two-phase
+stream assignment technique.
 %{\it The PC extractor module}, which is implemented in the ... as part ... of a
 %system call handler, computes a PC signature (i.e., a sum of program counter
 %values) for each write-related system function. 추가 동작 설명..
@@ -15,10 +14,13 @@ ill-behaving PCs with large lifetime variances.
 
 Fig.~\ref{fig:architecture} shows an overall organization of {\sf PCStream}.
 \textit{The PC extractor module}, which is implemented in the Linux kernel as
-part of a system call handler, computes a PC signature (i.e., a sum of program
-counter values) for each write-related system function (e.g.,
-\texttt{write()}).  This enables us to keep track of PCs corresponding to new
-data written by a specific module of an application.  The obtained PC is stored
+part of a system call handler, 
+computes a PC signature, which is used as a unique ID for each program context.  
+We use the signature program counter~\cite{PC} as a PC signature 
+by summing program counter values along the execution path to a write-related system function 
+(e.g., {\tt write()}).  
+With the PC signature, we can monitor the data lifetime of each write at the program context level. 
+A PC signature is stored
 in an inode data structure of a file system (modified for \textsf{PCStream})
 and is delivered to \textit{the lifetime analyzer module} which estimates
 expected lifetimes of data belonging to a given PC in the block device level.
@@ -26,15 +28,14 @@ In order to efficiently detect the end of data lifetime in append-only
 workloads, the lifetime analyzer also intercepts TRIM~\cite{TRIM} requests. %from a file system.  %shane part
 Based on the lifetime information, \textit{the PC-to-stream
 mapper module} clusters PCs with similar lifetimes and maps them together to
-the same stream ID.  This mapping is required because of the limited number of
-streams supported by an SSD.
-
+the same stream ID.  This mapping is required because 
+the number of streams in an SSD is generally less than the number of PCs in host applications.
 
 \vspace{-10pt}
 \subsection{Automatic PC computation}
 %\vspace{-5pt}
 As mentioned earlier, a PC is represented by a PC signature which is defined as
-the sum of program counters along the execution path of a function call that
+the sum of program counter values along the execution path of a function call that
 finally reaches a write-related system function. A function call involves
 pushing the next program counter, which is used as a return address, to the
 stack followed by pushing a frame pointer value.  In general, by using frame
@@ -49,7 +50,6 @@ accumulate them to compute a PC signature. (The return addresses are pushed
 before calling the {\sf write()}, {\sf BuildTable()} and {\sf
 WriteLevel0Table()} functions.)
 
-
 \begin{figure}[t]
 	\centering
 	\vspace{-7pt}
@@ -60,7 +60,6 @@ WriteLevel0Table()} functions.)
 	\vspace{-15pt}
 \end{figure}
 
-
 %The PC extractor obtains and accumulates each
 %return address, which is pushed before calling the {\sf write()}, {\sf
 %BuildTable()} and {\sf WriteLevel0Table()} functions, by referring the frame
@@ -70,7 +69,7 @@ WriteLevel0Table()} functions.)
 %that it does not use a frame register if possible.  
 The frame pointer-based approach for computing PC signatures, however, is not
 always possible because modern C/C++ compilers often do not use the frame
-pointer to aggressively minimize the program execution time.
+pointer for improving the efficiency of register allocation.
 One example is a
 {\tt -fomit-frame-pointer} option of GCC~\cite{GCC}. 
 %While it is effective in saving
@@ -80,33 +79,37 @@ Although this option allows the frame pointer to be used as a general-purpose
 register for high performance, it makes very difficult for us to back-track
 return addresses along the call chains.  
 
-In PCStream, we employ a simple but effective workaround for the frame pointer.
-When a write system call is made, we scan the every word in the stack and check
-it belongs to the process's code segment.  If the scanned stack word holds a
-value within the address range of the code segment, we assume that it is a
-return address.  Since scanning the full stack takes too long, we stop the
-stack scanning procedure when a sufficient number of return address candidates
-are found.  In the current version, we stop when 5 return address candidates
-are found.  Although quite ad-hoc, a restricted scan is effective in
-distinguishing different PCs because it is very unlikely that two different PCs
-follow the same execution path up to five caller functions.   In our evaluation
-with a 3.4 GHz CPU machine, the performance overhead of the restricted scan was
-almost negligible, taking only 300-400 $n$sec per write system call.
-
-\begin{figure}[t]
+\begin{figure}[b]
 %	\vspace{-10pt}
 	\centering
+	\vspace{-16pt}
 	\subfloat[An abstracted execution path for flushing data.]{\includegraphics[width=0.45\textwidth]{figure/getpc_1}}  
 	\vspace{-10pt}
 	\hfill
 	\subfloat[with the frame pointer.]{\includegraphics[width=0.245\textwidth]{figure/getpc_2}}
 	\subfloat[without the frame pointer.]{\includegraphics[width=0.25\textwidth]{figure/getpc_3}}
-	\vspace{-8pt}
+	\vspace{-10pt}
 	%\caption{An example execution path and its PC extraction methods.}
 	\caption{An example execution path and its PC extraction.} %shane part
 	\label{fig:getpc}
-	\vspace{-25pt}
 \end{figure}
+
+In {\sf PCStream}, we employ a simple but effective workaround 
+for backtracking the call stack when the frame pointer is not used.
+When a write system call is made, we scan the every word in the stack and check
+if it belongs to the process's code segment.  If the scanned stack word holds a
+value within the address range of the code segment, we assume that it is a
+return address.  Since scanning the full stack takes too long, we stop the
+stack scanning procedure when a sufficient number of return address candidates
+are found.  In the current version, we stop when 5 return address candidates
+are found.  Although quite ad-hoc, a restricted scan is effective in
+distinguishing different PCs because two different PCs
+follow the same execution path up to five caller functions.   
+cannot follow the same execution path to write system functions.  
+(If they do, they are the same PC.) In our evaluation
+with a 3.4 GHz CPU machine, the performance overhead of the restricted scan was
+almost negligible, taking only 300-400 $n$sec per write system call.
+
 
 
 \vspace{-10pt}
@@ -121,15 +124,15 @@ Upon receiving TRIM
 commands destined for those LBAs, the lifetime analyzer is able to measure the
 exact lifetime of those data. 
 Note that, the
-same PC may generate multiple data streams with different lifetimes, 
-so the average of them is used as PC's expected lifetime.
+same PC may generate multiple data streams with different lifetimes.
+We take the average lifetime as the PC's lifetime.
 
-
-\vspace{-5pt}
+\vspace{-10pt}
 \subsection{Mapping PCs to SSD streams}
 \vspace{-5pt}
-Our next step is to map a group of PCs with similar lifetimes to an SSD stream.
-This is because of a limited number of stream IDs offered by an SSD. For
+The last step in PCStream is to map
+a group of PCs with similar lifetimes to an SSD stream.
+This is because each SSD supports a limited number of stream IDs. For
 example, SSDs used in FStream~\cite{FStream} and AutoStream~\cite{AutoStream}
 support only 9 and 16 streams, respectively. To properly group multiple PCs,
 the PC-to-stream mapper employs a simple 1-D clustering algorithm.  For all the
@@ -142,20 +145,23 @@ must be efficient enough to quickly handle many PCs. Our goal in this work is
 to confirm the feasibility of using PCs, so we leave
 those issues as our future work.
 
-\vspace{-5pt}
+\vspace{-10pt}
 \subsection{Two-phase stream assignment}
 \vspace{-5pt}
 
-
-While the PC can be used as a useful indicator that determines the lifetime of
-data, we also observe that the same PC could generate data with various
-lifetimes. One example is the compaction module of RocksDB. RocksDB maintains
+For most PCs, their lifetime distributions tend to have small variances.  
+However, we observed that a few outlier PCs which have large lifetime variations. 
+For example, when multiple I/O contexts are covered by the same write system function, 
+the corresponding PC may represent several I/O contexts whose data lifetimes are quite different.   
+Such a case occurs, for example, in the compaction module of RocksDB.
+RocksDB maintains
 several levels, L1, ..., L$n$, in the persistent storage, except for L0 (or a
 memtable) stored in DRAM.  Once one level, say L2, becomes full, all the data
 in L2 is compacted to a lower level, i.e., L3.  It involves moving data from L2
 to L3, along with the deletion of the old data in L2.  In the
-LSM-tree~\cite{LSM}, a higher level is smaller than a lower level (i.e., L2 $<$
-L3). Thus, data stored in a higher level is invalidated sooner than those kept
+LSM tree~\cite{LSM}, a higher level is smaller than a lower level 
+(i.e., the size of (L2) $<$ the size of (L3)). 
+Thus, data stored in a higher level is invalidated more frequently than those kept
 in lower levels, thereby having shorter lifetimes.
 
 %Once the L1 becomes full,
@@ -179,12 +185,18 @@ in lower levels, thereby having shorter lifetimes.
 %level. Thus, data stored in a higher level is invalidated sooner than data kept
 %in lower levels, thereby having much shorter lifetimes.
 
-Unfortunately, the compaction is done by the same module for all the levels.
-A PC is thus not useful to distinguish data written for different levels.
-Fig.~\ref{fig:compaction}(a) shows the lifetimes of automatically identified data written by the
-compaction module. 
-Figs.~\ref{fig:compaction}(b)-(d) illustrate the lifetimes
-of manually identified data.
+Unfortunately, in the current RocksDB implementation, the compaction step is supported 
+by the same execution path (i.e., the same PC) regardless of the level.
+Therefore, the PC for the compaction activity cannot effectively separate data with 
+short lifetimes from one with long lifetimes.
+Fig.~\ref{fig:compaction}(a) shows 
+the lifetime distribution collected from the compaction-activity PC.  
+Since this distribution includes lifetimes of data written from all the levels, 
+its variance is large.  
+When we manually separate the single compaction step into several per-level compaction steps, 
+as shown in Fig. 5(b)-(c), the lifetime distributions of per-level compaction steps 
+show smaller variances.   
+In particular, L2 and L3 show distinct lifetime distributions from L4.
 Data from L1 are likely to have shorter lifetime, while L4 has generally
 long-lived data.
 
@@ -200,23 +212,19 @@ long-lived data.
 \subfloat[compaction: L4] {\includegraphics[width=0.23\textwidth]{figure/type_6b}}
 \vspace{-5pt}
 %\caption{The lifetime distribution of the compaction activity.} 
-\caption{Lifetime distribution of the compaction activity.} %shane part
+\caption{Lifetime distributions of the compaction activity at different levels.} %shane part
 \label{fig:compaction}
 \vspace{-15pt}
 \end{figure}
 
 In order to automatically assign data from the same PC to different SSD streams
-according to their lifetimes, we propose a two-phase method that decides SSD
-stream IDs in both a host and an SSD level.  
-For such a PC, e.g. compaction PC {\it pID}, {\sf PCStream} roughly assigns a
-stream {\it sID} as a guideline.
-If there are valid data in a victim block for GC, it means
-that those data tend to have longer lifetimes compared to other data even if
-they belong to the same stream.
-To separate long-lived data of {\it pID}, e.g. L4 data, 
-an FTL running inside an SSD allocates a substream for {\it sID}.
-The first assignment is for relatively hot data that were invalidated
-earlier; the second is for relatively cold ones that are still valid in the
-victim.  After that, data with different substream IDs are isolated in
-different blocks. 
+according to their lifetimes, we devised a two-phase method that decides SSD
+stream IDs both in a host level and in an SSD level.
+For such a PC (e.g. compaction-activity PC {\it pID}), {\sf PCStream} roughly assigns a
+stream {\it sID} at the host level.
+To separate long-lived data of 
+{\it pID} (e.g., L4 data) from short-lived (future) data of {\it pID} (e.g., L1 data), 
+we move the long-lived data of sID to its substream during garbage collection.   
+Conceptually, a substream is used to re-separate data in the same stream so that 
+future short-lived data cannot be mixed with past long-lived data in the same block.
 
