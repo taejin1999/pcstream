@@ -1,6 +1,6 @@
-\vspace{-7pt}
+\vspace{-10pt}
 \section{Design of \textsf{\normalsize PCStream}}
-\vspace{-5pt}
+\vspace{-8pt}
 We describe in detail the proposed automatic stream management technique, 
 \textsf{\small PCStream}.  We first explain how we automatically extract PCs during
 run time and describe how multiple PCs are mapped to streams in an SSD.
@@ -31,9 +31,9 @@ mapper module} clusters PCs with similar lifetimes and maps them together to
 the same stream ID.  This mapping is required because 
 the number of streams in an SSD is generally less than the number of PCs in host applications.
 
-\vspace{-10pt}
+\vspace{-13pt}
 \subsection{Automatic PC computation}
-%\vspace{-5pt}
+\vspace{-5pt}
 As mentioned earlier, a PC is represented by a PC signature which is defined as
 the sum of program counter values along the execution path of a function call that
 finally reaches a write-related system function. A function call involves
@@ -57,7 +57,7 @@ WriteLevel0Table()} functions.)
 	\vspace{-10pt}
 	\caption{An overall architecture of \textsf{\small PCStream}.}
 	\label{fig:architecture}
-	\vspace{-15pt}
+	\vspace{-20pt}
 \end{figure}
 
 %The PC extractor obtains and accumulates each
@@ -127,9 +127,9 @@ Note that, the
 same PC may generate multiple data streams with different lifetimes.
 We take the average lifetime as the PC's lifetime.
 
-\vspace{-10pt}
+\vspace{-8pt}
 \subsection{Mapping PCs to SSD streams}
-\vspace{-5pt}
+%\vspace{-5pt}
 The last step in \textsf{\small PCStream} is to map
 a group of PCs with similar lifetimes to an SSD stream.
 This is because each SSD supports a limited number of stream IDs. For
@@ -145,9 +145,9 @@ must be efficient enough to quickly handle many PCs. Our goal in this work is
 to confirm the feasibility of using PCs, so we leave
 those issues as our future work.
 
-\vspace{-10pt}
+\vspace{-8pt}
 \subsection{Two-phase stream assignment}
-\vspace{-5pt}
+%\vspace{-5pt}
 
 For most PCs, their lifetime distributions tend to have small variances.  
 However, we observed that a few outlier PCs which have large lifetime variations. 
@@ -214,7 +214,7 @@ long-lived data.
 %\caption{The lifetime distribution of the compaction activity.} 
 \caption{Lifetime distributions of the compaction activity at different levels.} %shane part
 \label{fig:compaction}
-\vspace{-15pt}
+\vspace{-20pt}
 \end{figure}
 
 In order to automatically assign data from the same PC to different SSD streams
