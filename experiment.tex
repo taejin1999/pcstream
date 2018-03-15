@@ -2,6 +2,18 @@
 \section{Experimental Results}
 \vspace{-5pt}
 
+\begin{figure*}[t]
+	\centering
+	\subfloat[\scriptsize{A comparison of WAF on the SSD emulator}.]{\label{fig:result_emul}\includegraphics[width=0.33\textwidth]{figure/result_emul}}
+	\subfloat[\scriptsize{A comparison of WAF on PM963}.]{\label{fig:result_ssd}\includegraphics[width=0.33\textwidth]{figure/result_ssd}}
+	\subfloat[\scriptsize{A lifetime comparison of each stream}.]{\label{fig:streamlifetime}\includegraphics[width=0.33\textwidth]{figure/streamlifetime}}
+	\vspace{-10pt}
+%	\caption{The WAF comparison on the emulator.}
+	\caption{???.}
+	\label{fig:exp}
+	\vspace{-15pt}
+\end{figure*}
+
 For our experiments, we have implemented \textsf{PCStream} in the Linux kernel
 4.5.  For objective evaluation, we compared \textsf{PCStream} with three
 existing schemes: \textsf{Baseline}, \textsf{Manual}~\cite{MultiStream}, and
@@ -25,6 +37,7 @@ key-value pairs to the SSD in a random key order.
 \subsection{Experiments with an SSD emulator}
 %\vspace{-5pt}
 
+\begin{comment}
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.8\linewidth]{figure/result_emul}
@@ -44,6 +57,17 @@ key-value pairs to the SSD in a random key order.
 	\caption{A lifetime comparison of each stream}
 	\label{fig:streamlifetime}
 \end{figure}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=0.8\linewidth]{figure/result_ssd}
+	\vspace{-10pt}
+	\caption{A comparison of WAF on PM963.}
+	\label{fig:result_SSD}
+	\vspace{-15pt}
+\end{figure}
+\end{comment}
+
 
 We carried out a set of experiments using an SSD emulator which is based on the
 open flash development platform~\cite{AMF}.  The SSD emulator emulates the
@@ -66,10 +90,6 @@ additional benefit came from isolating long- and short-lived data in separate
 blocks through the two-phase assignment at the SSD even if they belonged to the
 same compaction PC.
 
-<<<<<<< HEAD
-%\textcolor{red}{(TODO: please add text for new exp here)}
-=======
->>>>>>> 4b07409f4196627008e20e63972b6fd4735eadfd
 In order to analyze the improvement made by {\sf PCStream}, 
 we measured the data lifetime of each stream for the {\tt UR} scenario.
 Fig.~\ref{fig:streamlifetime} shows average, 75p, and 25p of data liftime 
@@ -91,14 +111,6 @@ by moving their data to substreams (e.g., stream 5 and 6, respectively).
 \subsection{Experiments with a real-world SSD}
 %\vspace{-5pt}
 
-\begin{figure}[t]
-	\centering
-	\includegraphics[width=0.8\linewidth]{figure/result_ssd}
-	\vspace{-10pt}
-	\caption{A comparison of WAF on PM963.}
-	\label{fig:result_SSD}
-	\vspace{-15pt}
-\end{figure}
 
 In order to confirm the feasibility of \textsf{PCStream}, we also have
 conducted experiments using Samsung's PM963 480GB SSD that supports 8 streams.
