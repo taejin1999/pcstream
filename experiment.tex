@@ -14,16 +14,16 @@
 	\vspace{-35pt}
 \end{figure*}
 
-For our experiments, we have implemented \textsf{PCStream} in the Linux kernel
-4.5.  For objective evaluation, we compared \textsf{PCStream} with three
-existing schemes: \textsf{Baseline}, \textsf{Manual}~\cite{MultiStream}, and
-\textsf{AutoStream}~\cite{AutoStream}.  \textsf{Baseline} stands for a legacy
-SSD that does not support a multi-stream feature. \textsf{Manual} is a RocksDB
+For our experiments, we have implemented \textsf{\small PCStream} in the Linux kernel
+4.5.  For objective evaluation, we compared \textsf{\small PCStream} with three
+existing schemes: \textsf{\small Baseline}, \textsf{\small Manual}~\cite{MultiStream}, and
+\textsf{\small AutoStream}~\cite{AutoStream}.  \textsf{\small Baseline} stands for a legacy
+SSD that does not support a multi-stream feature. \textsf{\small Manual} is a RocksDB
 implementation which is manually optimized for multi-streamed SSDs.
-\textsf{AutoStream} is an LBA-based data separation technique which is
+\textsf{\small AutoStream} is an LBA-based data separation technique which is
 implemented at the block driver layer. To understand the impact of the
-two-phase assignment, in addition, we compared \textsf{PCStream} with
-\textsf{PCStream$^{*}$} which excluded the two-phase assignment feature.
+two-phase assignment, in addition, we compared \textsf{\small PCStream} with
+\textsf{\small PCStream$^{*}$} which excluded the two-phase assignment feature.
 
 For benchmarks, we have used three scenarios of \texttt{db\_bench} of RocksDB:
 Update-Random (\texttt{UR}), Append-Random (\texttt{AR}), and Fill-Random
@@ -79,31 +79,31 @@ of streams supported by the emulator was 8.  The SSD emulator provided 12 GB
 capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of
 which was composed of 384 4-KB pages.  
 
-We compared WAF of the existing techniques with \small\textsf{PCStream} for the three
+We compared WAF of the existing techniques with \textsf{\small PCStream} for the three
 scenarios, and the result is shown in Fig. 6.  As shown in
-Fig. 6, {\sf PCStream$^*$} reduced WAF by up to 30\% over
-\textsf{AutoStream}.  The result shows that separating short-lived data (e.g.,
+Fig. 6, \textsf{\small PCStream$^*$} reduced WAF by up to 30\% over
+\textsf{\small AutoStream}.  The result shows that separating short-lived data (e.g.,
 log and flush) from long-lived one (e.g., compaction) using PC was quite
-effective in reducing WAF.  Moreover, \textsf{PCStream} even showed similar WAF to
-\textsf{Manual}, reducing it by up to 38\% over \textsf{AutoStream}.  This
+effective in reducing WAF.  Moreover, \textsf{\small PCStream} even showed similar WAF to
+\textsf{\small Manual}, reducing it by up to 38\% over \textsf{\small AutoStream}.  This
 additional benefit came from isolating long- and short-lived data in separate
 blocks through the two-phase assignment at the SSD even if they belonged to the
 same compaction PC.
 
-In order to analyze the improvement made by \textsf{PCStream}, 
+In order to analyze the improvement made by \textsf{\small PCStream}, 
 we measured the data lifetime of each stream for the {\tt UR} scenario.
 Fig. 7 shows average, 75p, and 25p of data liftime 
 for each stream.
 As shown in Fig. 7, data lifetimes of stream 0 to 5
-in \textsf{Manual} are gathered in a narrow range so data lifetime in
+in \textsf{\small Manual} are gathered in a narrow range so data lifetime in
 the same is quite similar.
-However, data lifetime of streams in \textsf{AutoStream} shows relatively large difference
-\textsf{AutoStream} does not notice when long-lived data is written to
+However, data lifetime of streams in \textsf{\small AutoStream} shows relatively large difference
+\textsf{\small AutoStream} does not notice when long-lived data is written to
 the hot stream.
-On the other hand, \textsf{PCStream$^*$} can identify short-lived data from 
+On the other hand, \textsf{\small PCStream$^*$} can identify short-lived data from 
 several dominant I/O activities as mentioned 
 in section 2, for example, stream 0 and 1 in the Fig. 7.
-\textsf{PCStream} can further separate long-lived data of several streams 
+\textsf{\small PCStream} can further separate long-lived data of several streams 
 (e.g., stream 3 and 4)
 by moving their data to substreams (e.g., stream 5 and 6, respectively). 
 
@@ -112,21 +112,21 @@ by moving their data to substreams (e.g., stream 5 and 6, respectively).
 %\vspace{-5pt}
 
 
-In order to confirm the feasibility of \textsf{PCStream}, we also have
+In order to confirm the feasibility of \textsf{\small PCStream}, we also have
 conducted experiments using Samsung's PM963 480GB SSD that supports 8 streams.
 Since it was impossible to implement the two-phase stream assignment in the
-commercial SSD firmware, we evaluated \textsf{PCStream$^*$} only.  To warm up the
+commercial SSD firmware, we evaluated \textsf{\small PCStream$^*$} only.  To warm up the
 SSD before running benchmarks, we filled up 90\% of the SSD capacity with valid
 data.
 
-As illustrated in Fig. 8, \textsf{PCStream$^*$} reduced WAF by
-30\% over \textsf{AutoStream} on average.  There were large WAF gaps between
-\textsf{PCStream$^{*}$} and the manually optimized case.  If the substream was
-properly supported during GC, we believe that \textsf{PCStream} could show
-similar WAF values as \textsf{Manual}.  \textsf{PCStream$^*$} still
-outperformed \textsf{AutoStream}, but a performance gap was smaller over that
+As illustrated in Fig. 8, \textsf{\small PCStream$^*$} reduced WAF by
+30\% over \textsf{\small AutoStream} on average.  There were large WAF gaps between
+\textsf{\small PCStream$^{*}$} and the manually optimized case.  If the substream was
+properly supported during GC, we believe that \textsf{\small PCStream} could show
+similar WAF values as \textsf{\small Manual}.  \textsf{\small PCStream$^*$} still
+outperformed \textsf{\small AutoStream}, but a performance gap was smaller over that
 in the emulated SSD environment.  It was difficult to pinpoint why
-\textsf{AutoStream} worked better in PM963 over in the emulated SSD, but we
+\textsf{\small AutoStream} worked better in PM963 over in the emulated SSD, but we
 suspect that some internal features of PM963 such as a large block size or some
 implementation details of streams might be related. 
 

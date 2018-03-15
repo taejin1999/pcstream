@@ -28,10 +28,10 @@ In this paper, our goal is to develop
 a {\it fully automatic} technique for managing streams 
 which is applicable for {\it any} multi-streamed SSD.
 
-To the best of our knowledge, AutoStream~\cite{AutoStream} is the only automatic 
+To the best of our knowledge, \textsf{\small AutoStream}~\cite{AutoStream} is the only automatic 
 stream management technique
 without additional manual work.  
-However, since AutoStream predicts data lifetimes using the update frequency 
+However, since \textsf{\small AutoStream} predicts data lifetimes using the update frequency 
 of the logical block address (LBA), it does not work well with modern append-only workloads 
 such as RocksDB~\cite{RocksDB} or Cassandra~\cite{Cassandra}.  
 Unlike conventional update workloads where data written to the same LBAs 
@@ -43,11 +43,11 @@ data written to a fixed LBA range over times in RocksDB
 show widely varying data lifetimes, 
 thus making it difficult to allocate streams based on LBA characteristics.
 
-In this paper, we propose a fully automatic stream management technique, called {\sf PCStream}, 
+In this paper, we propose a fully automatic stream management technique, called \textsf{\small PCStream}, 
 for multi-streamed SSDs based on program contexts (PCs).
-Since the key motivation behind {\sf PCStream} was 
+Since the key motivation behind \textsf{\small PCStream} was 
 that data lifetimes should be estimated at a higher abstraction level than LBAs, 
-{\sf PCStream} employed a write program context\footnote{Since we are interested in write-related 
+\textsf{\small PCStream} employed a write program context\footnote{Since we are interested in write-related 
 system calls such as write() and writev() in the Linux kernel, 
 we call their related program contexts as 
 {\it write program contexts.} In the rest of the paper, we use 
@@ -55,37 +55,37 @@ we call their related program contexts as
 as a stream management unit.
 A program context~\cite{PC, PC2}, which represents a particular execution phase of a program, 
 is known to be an effective hint in separating data with different lifetimes~\cite{PCHa}.  
-{\sf PCStream} automatically maps an identified program context to a stream.  
+\textsf{\small PCStream} automatically maps an identified program context to a stream.  
 Since program contexts can be computed during run time, 
-{\sf PCStream} does not need any manual work.   
+\textsf{\small PCStream} does not need any manual work.   
 %In order to handle append-only workloads, 
-%{\sf PCStream} extended the definition of the data lifetime 
+%\textsf{\small PCStream} extended the definition of the data lifetime 
 %so that the effect of the TRIM command~\cite{TRIM} can be accounted for. 
 
 Although most program contexts show that their data lifetimes are 
 distributed with small variances, we observed a few outliers 
 whose data lifetimes have rather large variances.
-In {\sf PCStream}, 
+In \textsf{\small PCStream}, 
 when such a PC {\it pID} is observed (which was mapped to a stream {\it sID}), 
 the long-lived data of {\it pID} are moved to the substream of {\it sID}
 during GC.  
 The substream prevents the long-lived data of the stream {\it sID} 
 from being mixed with future short-lived data of the stream {\it sID}.
 
-In order to evaluate the effectiveness of {\sf PCStream}, 
-we have implemented {\sf PCStream}
+In order to evaluate the effectiveness of \textsf{\small PCStream}, 
+we have implemented \textsf{\small PCStream}
 in the Linux kernel (ver. 4.5) and measured write amplification factor (WAF) values 
 using RocksDB on a Samsung PM963 SSD 
 as well as an SSD emulator.
-Our experimental results show that {\sf PCStream}
+Our experimental results show that \textsf{\small PCStream}
 can reduce the GC overhead as much as a highly-optimized 
 manual stream management technique while requiring no code modification.  
-Furthermore, PCStream outperformed AutoStream by reducing the average WAF by 30\%.
+Furthermore,PCStream outperformed \textsf{\small AutoStream} by reducing the average WAF by 30\%.
 
 The rest of this paper is organized as follows. 
-We explain the key motivations behind {\sf PCStream} in Section 2. 
+We explain the key motivations behind \textsf{\small PCStream} in Section 2. 
 Section 3 describes 
-the design of {\sf PCStream}.
+the design of \textsf{\small PCStream}.
 The experimental results are shown in Section 4. 
 Finally, we conclude in Section 5 with a summary and future work. 
 

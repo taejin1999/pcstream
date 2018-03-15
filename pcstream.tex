@@ -1,7 +1,7 @@
 \vspace{-7pt}
-\section{Design of PCStream}
+\section{Design ofPCStream}
 \vspace{-5pt}
-We describe in detail the proposed automatic stream management technique, {\sf
+We describe in detail the proposed automatic stream management technique, \textsf{\small 
 PCStream}.  We first explain how we automatically extracts PCs during
 run time and describe how multiple PCs are mapped to streams in an SSD.
 In order to mitigate the side effect of a few outlier PCs with large lifetime variances, 
@@ -12,7 +12,7 @@ stream assignment technique.
 %values) for each write-related system function. 추가 동작 설명..
 
 
-Fig.~\ref{fig:architecture} shows an overall organization of {\sf PCStream}.
+Fig.~\ref{fig:architecture} shows an overall organization of \textsf{\small PCStream}.
 \textit{The PC extractor module}, which is implemented in the Linux kernel as
 part of a system call handler, 
 computes a PC signature, which is used as a unique ID for each program context.  
@@ -21,7 +21,7 @@ by summing program counter values along the execution path to a write-related sy
 (e.g., {\tt write()}).  
 With the PC signature, we can monitor the data lifetime of each write at the program context level. 
 A PC signature is stored
-in an inode data structure of a file system (modified for \textsf{PCStream})
+in an inode data structure of a file system (modified for \textsf{\small PCStream})
 and is delivered to \textit{the lifetime analyzer module} which estimates
 expected lifetimes of data belonging to a given PC in the block device level.
 In order to efficiently detect the end of data lifetime in append-only
@@ -47,7 +47,7 @@ by back-tracking the stack.
 Since a frame pointer value in the stack holds the address of the previous
 frame pointer, the PC extractor can easily obtain return addresses and
 accumulate them to compute a PC signature. (The return addresses are pushed
-before calling the {\sf write()}, {\sf BuildTable()} and {\sf
+before calling the \textsf{\small  write()}, \textsf{\small  BuildTable()} and \textsf{\small 
 WriteLevel0Table()} functions.)
 
 \begin{figure}[t]
@@ -55,14 +55,14 @@ WriteLevel0Table()} functions.)
 	\vspace{-7pt}
 	\includegraphics[width=0.6\linewidth]{figure/architecture4}
 	\vspace{-10pt}
-	\caption{An overall architecture of {\sf PCStream}.}
+	\caption{An overall architecture of \textsf{\small PCStream}.}
 	\label{fig:architecture}
 	\vspace{-15pt}
 \end{figure}
 
 %The PC extractor obtains and accumulates each
-%return address, which is pushed before calling the {\sf write()}, {\sf
-%BuildTable()} and {\sf WriteLevel0Table()} functions, by referring the frame
+%return address, which is pushed before calling the \textsf{\small  write()}, \textsf{\small 
+%BuildTable()} and \textsf{\small  WriteLevel0Table()} functions, by referring the frame
 %pointer which holds the address of the previous frame pointer.
 
 %Unfortunately, C/C++ compilers often optimize an output code so
@@ -94,7 +94,7 @@ return addresses along the call chains.
 	\label{fig:getpc}
 \end{figure}
 
-In {\sf PCStream}, we employ a simple but effective workaround 
+In \textsf{\small PCStream}, we employ a simple but effective workaround 
 for backtracking the call stack when the frame pointer is not used.
 When a write system call is made, we scan the every word in the stack and check
 if it belongs to the process's code segment.  If the scanned stack word holds a
@@ -130,7 +130,7 @@ We take the average lifetime as the PC's lifetime.
 \vspace{-10pt}
 \subsection{Mapping PCs to SSD streams}
 \vspace{-5pt}
-The last step in PCStream is to map
+The last step inPCStream is to map
 a group of PCs with similar lifetimes to an SSD stream.
 This is because each SSD supports a limited number of stream IDs. For
 example, SSDs used in FStream~\cite{FStream} and AutoStream~\cite{AutoStream}
@@ -220,7 +220,7 @@ long-lived data.
 In order to automatically assign data from the same PC to different SSD streams
 according to their lifetimes, we devised a two-phase method that decides SSD
 stream IDs both in a host level and in an SSD level.
-For such a PC (e.g. compaction-activity PC {\it pID}), {\sf PCStream} roughly assigns a
+For such a PC (e.g. compaction-activity PC {\it pID}), \textsf{\small PCStream} roughly assigns a
 stream {\it sID} at the host level.
 To separate long-lived data of 
 {\it pID} (e.g., L4 data) from short-lived (future) data of {\it pID} (e.g., L1 data), 

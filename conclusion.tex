@@ -1,23 +1,23 @@
 \vspace{-10pt}
 \section{Conclusions}
 \vspace{-5pt}
-We have presented a new stream management technique, {\sf PCStream}, for multi-streamed SSDs.  
-Unlike existing stream management techniques, {\sf PCStream} fully automates 
+We have presented a new stream management technique, \textsf{\small PCStream}, for multi-streamed SSDs.  
+Unlike existing stream management techniques, \textsf{\small PCStream} fully automates 
 the process of mapping data to a stream based on PCs, 
 which work well for append-only workloads as well as update workloads.  
 By exploiting an observation that most PCs are distinguishable from each other 
-in their lifetime characteristics, {\sf PCStream} allocates each PC to a different stream.  
-When a PC has a large variance in their lifetimes, {\sf PCStream} refines its stream allocation 
+in their lifetime characteristics, \textsf{\small PCStream} allocates each PC to a different stream.  
+When a PC has a large variance in their lifetimes, \textsf{\small PCStream} refines its stream allocation 
 during garbage collection and moves the long-lived data of the current stream to its substream.  
-Our experimental results show that {\sf PCStream} can reduce WAF by up to 38\% over the existing
+Our experimental results show that \textsf{\small PCStream} can reduce WAF by up to 38\% over the existing
 automatic technique.
 
-The current version of {\sf PCStream} can be extended in several directions.  
+The current version of \textsf{\small PCStream} can be extended in several directions.  
 For example, we plan to optimize the PC clustering method so that
 multiple PCs can be better clustered when the number of PCs significantly
 outnumbers the number of streams.  
-%For example, {\sf PCStream} should be improved in its PC clustering method 
+%For example, \textsf{\small PCStream} should be improved in its PC clustering method 
 %so that it can work effectively even when there are more PCs than the number of streams.  
-%We also plan to evaluate {\sf PCStream} (not {\sf PCStream}$^{--}$) on real SSDs 
+%We also plan to evaluate \textsf{\small PCStream} (not \textsf{\small PCStream}$^{--}$) on real SSDs 
 %by implementing the two-phase stream assignment algorithm inside an FTL.
 
