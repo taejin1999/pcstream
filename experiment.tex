@@ -70,42 +70,55 @@ key-value pairs to the SSD in a random key order.
 
 
 We carried out a set of experiments using an SSD emulator which is based on the
-open flash development platform~\cite{AMF}.  The SSD emulator emulates the
-behaviors of an SSD using host DRAM in the kernel level. Thus, it not only
-allows us to easily add new features, but enables to analyze detailed internal
-activities of an SSD.  We enhanced the original emulator so that it supported a
-multi-streamed feature as well as the two-phase stream assignment.  The number
-of streams supported by the emulator was 8.  The SSD emulator provided 12 GB
-capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of
-which was composed of 384 4-KB pages.  
+open flash development platform~\cite{AMF}.  
+%The SSD emulator emulates the behaviors of an SSD using host DRAM in the kernel level. Thus, it not only allows us to easily add new features, but enables to analyze detailed internal activities of an SSD. 
+In the SSD emulator, the internal workings of an SSD is simulated using the host's DRAM memory in the kernel level. 
+For our evaluations, we extended the SSD emulator to support a multi-streamed feature. 
+Furthermore, we enhanced the garbage collection module of the SSD firmware to support the two-phase stream management technique. 
+We assume that the SSD emulator supports up to 8 streams (as with Samsung PM963 which was used in our experiments). 
+%We enhanced the original emulator so that it supported a multi-streamed feature as well as the two-phase stream assignment.  The number of streams supported by the emulator was 8.  
+The SSD emulator provided 12 GB capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of which was composed of 384 4-KB pages.  
+
 
 We compared WAF of the existing techniques with \textsf{\small PCStream} for the three
-scenarios, and the result is shown in Fig. 6.  As shown in
-Fig. 6, \textsf{\small PCStream$^*$} reduced WAF by up to 30\% over
-\textsf{\small AutoStream}.  The result shows that separating short-lived data (e.g.,
-log and flush) from long-lived one (e.g., compaction) using PC was quite
-effective in reducing WAF.  Moreover, \textsf{\small PCStream} even showed similar WAF to
-\textsf{\small Manual}, reducing it by up to 38\% over \textsf{\small AutoStream}.  This
-additional benefit came from isolating long- and short-lived data in separate
-blocks through the two-phase assignment at the SSD even if they belonged to the
-same compaction PC.
+scenarios, and the result is shown in Fig. 6.  
+\textsf{\small PCStream} was quite effective in reducing WAF, 
+thus achieving an equivalent level of the WAF reduction as in \textsf{\small Manual}.  
+For example, both \textsf{\small PCStream} and \textsf{\small Manual} reduced WAF by 38\% over Baseline for the \texttt{UR} case. 
+Compared with \textsf{\small AutoStream}, \textsf{\small PCStream} was more effective, reducing WAF more by 30\% on average.  
+Fig. 6 also indicates that the two-phase stream assignment technique is effective.  
+\textsf{\small PCStream} outperformed \textsf{\small PCStream$^{*}$} by {\color{red} 11\%} on average in the WAF reduction.
+%As shown in Fig. 6, \textsf{\small PCStream$^*$} reduced WAF by up to 30\% over \textsf{\small AutoStream}.  
+%The result shows that separating short-lived data (e.g., log and flush) from long-lived one (e.g., compaction) using PC was quite effective in reducing WAF.  Moreover, \textsf{\small PCStream} even showed similar WAF to \textsf{\small Manual}, reducing it by up to 38\% over \textsf{\small AutoStream}.  
+This additional gain of \textsf{\small PCStream} over \textsf{\small PCStream$^{*}$} came from isolating long- and short-lived data in separate blocks through the two-phase assignment at the SSD even if they belonged to the same compaction PC.
 
-In order to analyze the improvement made by \textsf{\small PCStream}, 
-we measured the data lifetime of each stream for the {\tt UR} scenario.
-Fig. 7 shows average, 75p, and 25p of data liftime 
-for each stream.
-As shown in Fig. 7, data lifetimes of stream 0 to 5
-in \textsf{\small Manual} are gathered in a narrow range so data lifetime in
-the same is quite similar.
-However, data lifetime of streams in \textsf{\small AutoStream} shows relatively large difference
-\textsf{\small AutoStream} does not notice when long-lived data is written to
-the hot stream.
-On the other hand, \textsf{\small PCStream$^*$} can identify short-lived data from 
-several dominant I/O activities as mentioned 
-in section 2, for example, stream 0 and 1 in the Fig. 7.
-\textsf{\small PCStream} can further separate long-lived data of several streams 
-(e.g., stream 3 and 4)
-by moving their data to substreams (e.g., stream 5 and 6, respectively). 
+
+In order to better understand how \textsf{\small PCStream} achieved a high reduction in WAF, 
+we measured per-stream lifetime distributions under each technique for the \texttt{UR} scenario.
+Fig. 7 shows a box plot of data lifetimes from 25\%-tile to 75\%-tile.
+%In order to analyze the improvement made by \textsf{\small PCStream}, 
+%we measured the data lifetime of each stream for the {\tt UR} scenario.
+%Fig. 7 shows average, 75p, and 25p of data liftime for each stream.
+As shown in Fig. 7, 
+streams in \textsf{\small PCStream} are divided into two groups, 
+$G1$ and $G2$ where $G1$ includes streams with short lifetimes and small variances (e.g., streams 0, 1, 2, 3, and 4) 
+and $G2$ includes streams with large lifetimes and large variances (e.g., streams 5 and 6).  
+By preventing $G1$ and $G2$ from mixing in the same block, 
+\textsf{\small PCStream} can reduce the GC overhead.  
+On the other hand, in \textsf{\small AutoStream}, 
+three streams (i.e., streams 1, 2, and 3) show similar lifetime distributions with large variances, 
+thus not effectively taking full advantage of streams.
+%data lifetimes of stream 0 to 5 in \textsf{\small Manual} are gathered in a narrow range so data lifetime in the same is quite similar.
+%However, data lifetime of streams in \textsf{\small AutoStream} shows relatively large difference
+%\textsf{\small AutoStream} does not notice when long-lived data is written to the hot stream.
+%On the other hand, \textsf{\small PCStream$^*$} can identify short-lived data from 
+%several dominant I/O activities as mentioned in section 2, for example, stream 0 and 1 in the Fig. 7.
+%\textsf{\small PCStream} can further separate long-lived data of several streams (e.g., stream 3 and 4)
+%by moving their data to substreams (e.g., stream 5 and 6, respectively). 
+In Fig. 7, we can also observe the effect of substreams.  
+Streams 3 and 4 of \textsf{\small PCStream$^{*}$}, 
+which have large variances in lifetimes, are split into two substreams 5 and 6 in \textsf{\small PCStream}.
+This split reduces variances of streams 3 and 4, thus improving WAF. 
 
 \vspace{-10pt}
 \subsection{Experiments with a real-world SSD}
@@ -118,15 +131,13 @@ Since it was impossible to implement the two-phase stream assignment in the
 commercial SSD firmware, we evaluated \textsf{\small PCStream$^*$} only.  To warm up the
 SSD before running benchmarks, we filled up 90\% of the SSD capacity with valid
 data.
-
 As illustrated in Fig. 8, \textsf{\small PCStream$^*$} reduced WAF by
-30\% over \textsf{\small AutoStream} on average.  There were large WAF gaps between
-\textsf{\small PCStream$^{*}$} and the manually optimized case.  If the substream was
-properly supported during GC, we believe that \textsf{\small PCStream} could show
-similar WAF values as \textsf{\small Manual}.  \textsf{\small PCStream$^*$} still
-outperformed \textsf{\small AutoStream}, but a performance gap was smaller over that
+30\% over \textsf{\small AutoStream} on average.  
+%There were large WAF gaps between \textsf{\small PCStream$^{*}$} and the manually optimized case.  If the substream was properly supported during GC, we believe that \textsf{\small PCStream} could show similar WAF values as \textsf{\small Manual}.  
+Note that although \textsf{\small PCStream$^*$} still outperformed \textsf{\small AutoStream} in PM963, 
+but a performance gap was smaller over that
 in the emulated SSD environment.  It was difficult to pinpoint why
 \textsf{\small AutoStream} worked better in PM963 over in the emulated SSD, but we
-suspect that some internal features of PM963 such as a large block size or some
-implementation details of streams might be related. 
+suspect that some internal features of PM963 (such as a large block size or some implementation details of streams) %might be related. 
+might have affected the performance of \textsf{\small AutoStream}.
 

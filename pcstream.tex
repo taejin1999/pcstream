@@ -194,7 +194,7 @@ the lifetime distribution collected from the compaction-activity PC.
 Since this distribution includes lifetimes of data written from all the levels, 
 its variance is large.  
 When we manually separate the single compaction step into several per-level compaction steps, 
-as shown in Fig. 5(b)-(c), the lifetime distributions of per-level compaction steps 
+as shown in Figs. 5(b) and 5(c), the lifetime distributions of per-level compaction steps 
 show smaller variances.   
 In particular, L2 and L3 show distinct lifetime distributions from L4.
 Data from L1 are likely to have shorter lifetime, while L4 has generally
@@ -220,11 +220,11 @@ long-lived data.
 In order to automatically assign data from the same PC to different SSD streams
 according to their lifetimes, we devised a two-phase method that decides SSD
 stream IDs both in a host level and in an SSD level.
-For such a PC (e.g. compaction-activity PC {\it pID}), \textsf{\small PCStream} roughly assigns a
+For such a PC (e.g. the compaction-activity PC {\it pID}), \textsf{\small PCStream} assigns a
 stream {\it sID} at the host level.
 To separate long-lived data of 
 {\it pID} (e.g., L4 data) from short-lived (future) data of {\it pID} (e.g., L1 data), 
-we move the long-lived data of sID to its substream during garbage collection.   
+we move the long-lived data of {\it sID} to its substream during garbage collection.   
 Conceptually, a substream is used to re-separate data in the same stream so that 
 future short-lived data cannot be mixed with past long-lived data in the same block.
 
