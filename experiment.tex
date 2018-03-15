@@ -79,18 +79,18 @@ of streams supported by the emulator was 8.  The SSD emulator provided 12 GB
 capacity with 4 channels and 4 ways, and there were 8192 flash blocks, each of
 which was composed of 384 4-KB pages.  
 
-We compared WAF of the existing techniques with {\sf PCStream} for the three
+We compared WAF of the existing techniques with \small\textsf{PCStream} for the three
 scenarios, and the result is shown in Fig.~\ref{fig:result_emul}.  As shown in
-Fig.~\ref{fig:result_emul}, {\sf PCStream$^*$} reduced WAF by up to 30\% over
+Fig.~\ref{fig:result_emul}, \textsf{PCStream$^*$} reduced WAF by up to 30\% over
 \textsf{AutoStream}.  The result shows that separating short-lived data (e.g.,
 log and flush) from long-lived one (e.g., compaction) using PC was quite
-effective in reducing WAF.  Moreover, {\sf PCStream} even showed similar WAF to
+effective in reducing WAF.  Moreover, \textsf{PCStream} even showed similar WAF to
 \textsf{Manual}, reducing it by up to 38\% over \textsf{AutoStream}.  This
 additional benefit came from isolating long- and short-lived data in separate
 blocks through the two-phase assignment at the SSD even if they belonged to the
 same compaction PC.
 
-In order to analyze the improvement made by {\sf PCStream}, 
+In order to analyze the improvement made by \textsf{PCStream}, 
 we measured the data lifetime of each stream for the {\tt UR} scenario.
 Fig.~\ref{fig:streamlifetime} shows average, 75p, and 25p of data liftime 
 for each stream.
@@ -100,7 +100,7 @@ the same is quite similar.
 However, data lifetime of streams in \textsf{AutoStream} shows relatively large difference
 \textsf{AutoStream} does not notice when long-lived data is written to
 the hot stream.
-On the other hand, {\sf PCStream$^*$} can identify short-lived data from 
+On the other hand, \textsf{PCStream$^*$} can identify short-lived data from 
 several dominant I/O activities as mentioned 
 in section 2, for example, stream 0 and 1 in the Fig.~\ref{fig:streamlifetime}.
 \textsf{PCStream} can further separate long-lived data of several streams 
@@ -115,11 +115,11 @@ by moving their data to substreams (e.g., stream 5 and 6, respectively).
 In order to confirm the feasibility of \textsf{PCStream}, we also have
 conducted experiments using Samsung's PM963 480GB SSD that supports 8 streams.
 Since it was impossible to implement the two-phase stream assignment in the
-commercial SSD firmware, we evaluated {\sf PCStream$^*$} only.  To warm up the
+commercial SSD firmware, we evaluated \textsf{PCStream$^*$} only.  To warm up the
 SSD before running benchmarks, we filled up 90\% of the SSD capacity with valid
 data.
 
-As illustrated in Fig.~\ref{fig:result_SSD}, {\sf PCStream$^*$} reduced WAF by
+As illustrated in Fig.~\ref{fig:result_SSD}, \textsf{PCStream$^*$} reduced WAF by
 30\% over \textsf{AutoStream} on average.  There were large WAF gaps between
 \textsf{PCStream$^{*}$} and the manually optimized case.  If the substream was
 properly supported during GC, we believe that \textsf{PCStream} could show
