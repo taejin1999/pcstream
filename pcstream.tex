@@ -1,9 +1,9 @@
 \vspace{-10pt}
-\section{Design of \textsf{\normalsize PCStream}}
+\section{Design of \textsf{PCStream}}
 \vspace{-8pt}
 We describe in detail the proposed automatic stream management technique, 
 \textsf{\small PCStream}.  We first explain how we automatically extract PCs during
-run time and describe how multiple PCs are mapped to streams in an SSD.
+runtime and describe how multiple PCs are mapped to streams in an SSD.
 In order to mitigate the side effect of a few outlier PCs with large lifetime variances, 
 we introduce `substreams' based on a two-phase
 stream assignment technique.
@@ -45,7 +45,8 @@ Fig.~\ref{fig:getpc}(a) shows the abstracted execution path for flushing data
 in RocksDB and Fig.~\ref{fig:getpc}(b) illustrates how a PC signature is obtained
 by back-tracking the stack.  
 Since a frame pointer value in the stack holds the address of the previous
-frame pointer, the PC extractor can easily obtain return addresses and
+%frame pointer, the PC extractor can easily obtain return addresses and
+frame pointer, the PC extractor can obtain return addresses and
 accumulate them to compute a PC signature. (The return addresses are pushed
 before calling the \textsf{\small  write()}, \textsf{\small  BuildTable()} and \textsf{\small 
 WriteLevel0Table()} functions.)
