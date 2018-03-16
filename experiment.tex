@@ -85,30 +85,37 @@ We compared WAF of the existing techniques with \textsf{\small PCStream} for the
 scenarios, and the result is shown in Fig. 6.  
 \textsf{\small PCStream} was quite effective in reducing WAF, 
 thus achieving an equivalent level of the WAF reduction as in \textsf{\small Manual}.  
-For example, both \textsf{\small PCStream} and \textsf{\small Manual} reduced WAF by 38\% over Baseline for the \texttt{UR} case. 
-Compared with \textsf{\small AutoStream}, \textsf{\small PCStream} was more effective, reducing WAF more by 35\% on average.  
+For example, both \textsf{\small PCStream} and \textsf{\small Manual} reduced WAF by 38\% over \textsf{\small Baseline} for the \texttt{UR} case. 
+%Compared with \textsf{\small AutoStream}, \textsf{\small PCStream} was more effective, reducing WAF more by 35\% on average.  
+\textsf{\small PCStream} outperformed \textsf{\small AutoStream} by reducing WAF by 35\% on average.
 Fig. 6 also indicates that the two-phase stream assignment technique is effective.  
 \textsf{\small PCStream} outperformed \textsf{\small PCStream$^{*}$} by 12\% on average in the WAF reduction.
 %As shown in Fig. 6, \textsf{\small PCStream$^*$} reduced WAF by up to 30\% over \textsf{\small AutoStream}.  
 %The result shows that separating short-lived data (e.g., log and flush) from long-lived one (e.g., compaction) using PC was quite effective in reducing WAF.  Moreover, \textsf{\small PCStream} even showed similar WAF to \textsf{\small Manual}, reducing it by up to 38\% over \textsf{\small AutoStream}.  
-This additional gain of \textsf{\small PCStream} over \textsf{\small PCStream$^{*}$} came from isolating long- and short-lived data in separate blocks through the two-phase assignment at the SSD even if they belonged to the same compaction PC.
+This additional gain of \textsf{\small PCStream} over \textsf{\small PCStream$^{*}$} came from isolating long- and short-lived data in separate blocks 
+%through the two-phase assignment at the SSD even if they belonged to the same compaction PC.
+by moving the long-lived data of the compaction-activity PC to substreams during GC at the SSD.
 
 
 In order to better understand how \textsf{\small PCStream} achieved a high reduction in WAF, 
 we measured per-stream lifetime distributions under each technique for the \texttt{UR} scenario.
-Fig. 7 shows a box plot of data lifetimes from 25\%-tile to 75\%-tile.
+Fig. 7 shows a box plot of data lifetimes from the 25th percentile to the 75th percentile.
 %In order to analyze the improvement made by \textsf{\small PCStream}, 
 %we measured the data lifetime of each stream for the {\tt UR} scenario.
 %Fig. 7 shows average, 75p, and 25p of data liftime for each stream.
 As shown in Fig. 7, 
 streams in \textsf{\small PCStream} are divided into two groups, 
-$G1$ and $G2$ where $G1$ includes streams with short lifetimes and small variances (e.g., streams 0, 1, 2, 3, and 4) 
-and $G2$ includes streams with large lifetimes and large variances (e.g., streams 5 and 6).  
-By preventing $G1$ and $G2$ from mixing in the same block, 
-\textsf{\small PCStream} can reduce the GC overhead.  
+$G1$ and $G2$, where $G1$ includes streams with short lifetimes and small variances (i.e., streams 0, 1, 2, 3, and 4) 
+and $G2$ includes streams with large lifetimes and large variances (i.e., streams 5 and 6).  
+%By preventing $G1$ and $G2$ from mixing in the same block, \textsf{\small PCStream} can reduce the GC overhead.  
+Since the GC copy cost is directly affected by how data in $G1$ and data in $G2$ are mixed into the same block, 
+\textsf{\small PCStream} can significantly reduce the GC overhead by avoiding such data mixtures in the same block by separating two groups into different streams. 
 On the other hand, in \textsf{\small AutoStream}, 
-three streams (i.e., streams 1, 2, and 3) show similar lifetime distributions with large variances, 
-thus not effectively taking full advantage of streams.
+three streams (i.e., streams 1, 2, and 3) show similar lifetime distributions with large variances.
+Unlike \textsf{\small PCStream} and \textsf{\small Manual}, \textsf{\small AutoStream} does not show that 
+their streams are divided based on data lifetimes.  
+Such stream allocation is not effective in reducing the GC copy cost. 
+%, thus not effectively taking full advantage of streams.
 %data lifetimes of stream 0 to 5 in \textsf{\small Manual} are gathered in a narrow range so data lifetime in the same is quite similar.
 %However, data lifetime of streams in \textsf{\small AutoStream} shows relatively large difference
 %\textsf{\small AutoStream} does not notice when long-lived data is written to the hot stream.
@@ -119,14 +126,15 @@ thus not effectively taking full advantage of streams.
 In Fig. 7, we can also observe the effect of substreams.  
 Streams 3 and 4 of \textsf{\small PCStream$^{*}$}, 
 which have large variances in lifetimes, are split into two substreams 5 and 6 in \textsf{\small PCStream}.
-This split reduces variances of streams 3 and 4, thus improving WAF. 
+This split reduces variances of streams 3 and 4, thus reducing the GC copy cost.  %improving WAF. 
 
 \vspace{-8pt}
 \subsection{Experiments with a real-world SSD}
 %\vspace{-3pt}
 
-
-In order to confirm the feasibility of \textsf{\small PCStream}, we also have
+In order to evaluate the effect of \textsf{\small PCStream} in a real SSD,  
+%In order to confirm the feasibility of \textsf{\small PCStream}, 
+we have
 conducted experiments using Samsung's PM963 480GB SSD that supports 8 streams.
 Since it was impossible to implement the two-phase stream assignment in the
 commercial SSD firmware, we evaluated \textsf{\small PCStream$^*$} only.  To warm up the
