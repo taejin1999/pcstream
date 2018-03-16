@@ -1,7 +1,8 @@
 \vspace{-10pt}
 \section{Design of \textsf{PCStream}}
-\vspace{-8pt}
-We describe in detail the proposed automatic stream management technique, 
+\vspace{-3pt}
+%We describe in detail the proposed automatic stream management technique, 
+In this section, we describe in detail the proposed automatic stream management technique, %shane part
 \textsf{\small PCStream}.  We first explain how we automatically extract PCs during
 runtime and describe how multiple PCs are mapped to streams in an SSD.
 In order to mitigate the side effect of a few outlier PCs with large lifetime variances, 
@@ -31,7 +32,7 @@ mapper module} clusters PCs with similar lifetimes and maps them together to
 the same stream ID.  This mapping is required because 
 the number of streams in an SSD is generally less than the number of PCs in host applications.
 
-\vspace{-13pt}
+\vspace{-10pt}
 \subsection{Automatic PC computation}
 %\vspace{-5pt}
 As mentioned earlier, a PC is represented by a PC signature which is defined as
