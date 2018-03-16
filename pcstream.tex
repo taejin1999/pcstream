@@ -113,8 +113,10 @@ almost negligible, taking only 300-400 $n$sec per write system call.
 
 
 
-\vspace{-8pt}
+%\vspace{-8pt}
 \subsection{PC lifetime prediction}
+\vspace{-3pt}
+
 The prediction of PC lifetimes is rather complicated. 
 The data lifetime of the append-only workload is defined 
 from when a write request is issued until the TRIM command~\cite{TRIM} is issued to 
@@ -128,9 +130,10 @@ Note that, the
 same PC may generate multiple data streams with different lifetimes.
 We take the average lifetime as the PC's lifetime.
 
-\vspace{-8pt}
+\vspace{-10pt}
 \subsection{Mapping PCs to SSD streams}
-%\vspace{-5pt}
+\vspace{-3pt}
+
 The last step in \textsf{\small PCStream} is to map
 a group of PCs with similar lifetimes to an SSD stream.
 This is because each SSD supports a limited number of stream IDs. For
@@ -146,9 +149,9 @@ must be efficient enough to quickly handle many PCs. Our goal in this work is
 to confirm the feasibility of using PCs, so we leave
 those issues as our future work.
 
-\vspace{-8pt}
+\vspace{-10pt}
 \subsection{Two-phase stream assignment}
-%\vspace{-5pt}
+\vspace{-3pt}
 
 For most PCs, their lifetime distributions tend to have small variances.  
 However, we observed that a few outlier PCs which have large lifetime variations. 
