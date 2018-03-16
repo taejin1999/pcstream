@@ -1,5 +1,5 @@
 \vspace{-10pt}
-\section{Design of \textsf{\normalsize PCStream}}
+\section{Design of \textsf{PCStream}}
 \vspace{-8pt}
 We describe in detail the proposed automatic stream management technique, 
 \textsf{\small PCStream}.  We first explain how we automatically extract PCs during
@@ -33,7 +33,7 @@ the number of streams in an SSD is generally less than the number of PCs in host
 
 \vspace{-13pt}
 \subsection{Automatic PC computation}
-\vspace{-5pt}
+%\vspace{-5pt}
 As mentioned earlier, a PC is represented by a PC signature which is defined as
 the sum of program counter values along the execution path of a function call that
 finally reaches a write-related system function. A function call involves
@@ -45,7 +45,8 @@ Fig.~\ref{fig:getpc}(a) shows the abstracted execution path for flushing data
 in RocksDB and Fig.~\ref{fig:getpc}(b) illustrates how a PC signature is obtained
 by back-tracking the stack.  
 Since a frame pointer value in the stack holds the address of the previous
-frame pointer, the PC extractor can easily obtain return addresses and
+%frame pointer, the PC extractor can easily obtain return addresses and
+frame pointer, the PC extractor can obtain return addresses and
 accumulate them to compute a PC signature. (The return addresses are pushed
 before calling the \textsf{\small  write()}, \textsf{\small  BuildTable()} and \textsf{\small 
 WriteLevel0Table()} functions.)
@@ -112,7 +113,7 @@ almost negligible, taking only 300-400 $n$sec per write system call.
 
 
 
-\vspace{-10pt}
+\vspace{-8pt}
 \subsection{PC lifetime prediction}
 The prediction of PC lifetimes is rather complicated. 
 The data lifetime of the append-only workload is defined 
@@ -153,7 +154,8 @@ For most PCs, their lifetime distributions tend to have small variances.
 However, we observed that a few outlier PCs which have large lifetime variations. 
 For example, when multiple I/O contexts are covered by the same write system function, 
 the corresponding PC may represent several I/O contexts whose data lifetimes are quite different.   
-Such a case occurs, for example, in the compaction module of RocksDB.
+Such a case occurs %, for example, 
+in the compaction module of RocksDB.
 RocksDB maintains
 several levels, L1, ..., L$n$, in the persistent storage, except for L0 (or a
 memtable) stored in DRAM.  Once one level, say L2, becomes full, all the data
@@ -198,7 +200,7 @@ as shown in Figs. 5(b) and 5(c), the lifetime distributions of per-level compact
 show smaller variances.   
 In particular, L2 and L3 show distinct lifetime distributions from L4.
 Data from L1 are likely to have shorter lifetime, while L4 has generally
-long-lived data.
+long-lived data as shown in Fig. 5(d).
 
 \begin{figure}[!t]
 \centering
@@ -212,7 +214,7 @@ long-lived data.
 \subfloat[compaction: L3]{\includegraphics[width=0.21\textwidth]{figure/type_5}}
 	\hspace{2pt}
 \subfloat[compaction: L4]{\includegraphics[width=0.21\textwidth]{figure/type_6}}
-\vspace{-5pt}
+\vspace{-10pt}
 %\caption{The lifetime distribution of the compaction activity.} 
 \caption{Lifetime distributions of the compaction activity at different levels.} %shane part
 \label{fig:compaction}
