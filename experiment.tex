@@ -4,6 +4,7 @@
 
 \begin{figure*}[t]
 	\centering
+	\vspace{-3pt}
 	\includegraphics[width=1\textwidth]{figure/expfig}
 %	\subfloat[\scriptsize{A comparison of WAF on the SSD emulator}.]{\label{fig:result_emul}\includegraphics[width=0.33\textwidth]{figure/result_emul}}
 %	\subfloat[\scriptsize{A comparison of WAF on PM963}.]{\label{fig:result_ssd}\includegraphics[width=0.33\textwidth]{figure/result_ssd}}
@@ -35,7 +36,7 @@ key-value pairs to the SSD in a random key order.
 
 \vspace{-10pt}
 \subsection{Experiments with an SSD emulator}
-%\vspace{-5pt}
+\vspace{-2pt}
 
 \begin{comment}
 \begin{figure}[t]
@@ -94,7 +95,8 @@ Fig. 6 also indicates that the two-phase stream assignment technique is effectiv
 %The result shows that separating short-lived data (e.g., log and flush) from long-lived one (e.g., compaction) using PC was quite effective in reducing WAF.  Moreover, \textsf{\small PCStream} even showed similar WAF to \textsf{\small Manual}, reducing it by up to 38\% over \textsf{\small AutoStream}.  
 This additional gain of \textsf{\small PCStream} over \textsf{\small PCStream$^{*}$} came from isolating long- and short-lived data in separate blocks 
 %through the two-phase assignment at the SSD even if they belonged to the same compaction PC.
-by moving the long-lived data of the compaction-activity PC to substreams during GC at the SSD.
+%by moving the long-lived data of the compaction-activity PC to substreams during GC at the SSD.
+by moving the long-lived data to substreams during GC at the SSD.
 
 
 In order to better understand how \textsf{\small PCStream} achieved a high reduction in WAF, 
@@ -105,16 +107,19 @@ Fig. 7 shows a box plot of data lifetimes from the 25th percentile to the 75th p
 %Fig. 7 shows average, 75p, and 25p of data liftime for each stream.
 As shown in Fig. 7, 
 streams in \textsf{\small PCStream} are divided into two groups, 
-$G1$ and $G2$, where $G1$ includes streams with short lifetimes and small variances (i.e., streams 0, 1, 2, 3, and 4) 
-and $G2$ includes streams with large lifetimes and large variances (i.e., streams 5 and 6).  
+$G1$ = $\{$0, 1, 2, 3, 4$\}$ and $G2$ = $\{$5, 6$\}$, 
+where $G1$ includes streams with short lifetimes and small variances %(i.e., streams 0, 1, 2, 3, and 4) 
+and $G2$ includes streams with large lifetimes and large variances.  %(i.e., streams 5 and 6).  
 %By preventing $G1$ and $G2$ from mixing in the same block, \textsf{\small PCStream} can reduce the GC overhead.  
-Since the GC copy cost is directly affected by how data in $G1$ and data in $G2$ are mixed into the same block, 
-\textsf{\small PCStream} can significantly reduce the GC overhead by avoiding such data mixtures in the same block by separating two groups into different streams. 
+Since the GC copy cost is affected by how data in $G1$ and $G2$ are mixed into the same block, 
+\textsf{\small PCStream} can significantly reduce the GC overhead 
+by avoiding such data mixtures in the same block by separating $G1$ and $G2$ into different streams. 
 On the other hand, in \textsf{\small AutoStream}, 
-three streams (i.e., streams 1, 2, and 3) show similar lifetime distributions with large variances.
-Unlike \textsf{\small PCStream} and \textsf{\small Manual}, \textsf{\small AutoStream} does not show that 
-their streams are divided based on data lifetimes.  
-Such stream allocation is not effective in reducing the GC copy cost. 
+three streams (i.e., streams 1, 2, and 3) show similar lifetime distributions with large variances 
+without a distinct data separation pattern.
+%Unlike \textsf{\small PCStream} and \textsf{\small Manual}, \textsf{\small AutoStream} does not show that 
+%their streams are divided based on data lifetimes.  
+%Such stream allocation is not effective in reducing the GC copy cost. 
 %, thus not effectively taking full advantage of streams.
 %data lifetimes of stream 0 to 5 in \textsf{\small Manual} are gathered in a narrow range so data lifetime in the same is quite similar.
 %However, data lifetime of streams in \textsf{\small AutoStream} shows relatively large difference
@@ -130,7 +135,7 @@ This split reduces variances of streams 3 and 4, thus reducing the GC copy cost.
 
 \vspace{-8pt}
 \subsection{Experiments with a real-world SSD}
-%\vspace{-3pt}
+\vspace{-2pt}
 
 In order to evaluate the effect of \textsf{\small PCStream} in a real SSD,  
 %In order to confirm the feasibility of \textsf{\small PCStream}, 
