@@ -98,7 +98,7 @@ return addresses along the call chains.
 
 In \textsf{\small PCStream}, we employ a simple but effective workaround 
 for backtracking the call stack when the frame pointer is not used.
-When a write system call is made, we scan the every word in the stack and check
+When a write system call is made, we scan every word in the stack and check
 if it belongs to the process's code segment.  If the scanned stack word holds a
 value within the address range of the code segment, we assume that it is a
 return address.  Since scanning the full stack takes too long, we stop the
@@ -203,7 +203,7 @@ When we manually separate the single compaction step into several per-level comp
 as shown in Figs. 5(b) and 5(c), the lifetime distributions of per-level compaction steps 
 show smaller variances.   
 In particular, L2 and L3 show distinct lifetime distributions from L4.
-Data from L1 are likely to have shorter lifetime, while L4 has generally
+Data from L1 are likely to have shorter lifetimes, while L4 has generally
 long-lived data as shown in Fig. 5(d).
 
 \begin{figure}[!t]

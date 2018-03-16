@@ -7,7 +7,7 @@ called streams, for a host system to prevent data with different lifetimes
 from being mixed into the same block~\cite{T10, MultiStream}.
 When the host system maps two data $D_1$ and $D_2$ to 
 different streams $S_1$ and $S_2$, a multi-streamed SSD guarantees that 
-$D_1$ and $D_2$ are placed to different blocks.   
+$D_1$ and $D_2$ are placed in different blocks.   
 Since streams, when properly managed, can be very effective in minimizing 
 the copy cost of garbage collection (GC), they
 can significantly improve both the performance and lifetime of 
@@ -39,7 +39,7 @@ often show strong update locality,
 append-only workloads make it impossible to predict data lifetimes 
 from LBA characteristics (such as access frequency or access patterns).  
 For example, as shown in Fig.~\ref{fig:lba_lifetime}(b), 
-data written to a fixed LBA range over times in RocksDB 
+data written to a fixed LBA range over time in RocksDB 
 show widely varying data lifetimes, 
 thus making it difficult to allocate streams based on LBA characteristics.
 
