@@ -2,7 +2,7 @@
 %\linespread{2.4}
 \documentclass[letterpaper, twocolumn, 10pt]{article}
 \usepackage{usenix}
-\linespread{0.97}
+%\linespread{0.99}
 
 \usepackage{multirow}
 \usepackage{comment}
@@ -25,6 +25,7 @@
 \begin{document}
 
 \title{
+\vspace{-14pt}
 \bf PCStream: Automatic Stream Allocation Using Program Contexts}
 
 %\numberofauthors{1}
@@ -35,33 +36,12 @@
 	$^1$Seoul National University, $^2$DGIST, $^3$Samsung Electronics
 	}
 
-\begin{comment}
-\author{
-{\rm Taejin Kim}\\
-Seoul National University
-\and 
-{\rm Sangwook Shane Hahn}\\
-Seoul National University
-\and 
-{\rm Sungjin Lee}\\
-DGIST
-\and 
-{\rm Jooyoung Hwang} \\
-Samsung Electronics
-\and 
-{\rm Jongyoul Lee} \\
-Samsung Electronics
-\and 
-{\rm Jihong Kim} \\
-Seoul National University
-}
-\end{comment}
 
 \maketitle
-\thispagestyle{empty}
-
+%\thispagestyle{empty}
+\pagestyle{empty}
 \subsection*{Abstract}
-%\vspace{-9pt}
+\vspace{-9pt}
 We propose a fully automatic stream management technique, called {\sf PCStream}, 
 for multi-streamed SSDs.
 {\sf PCStream} is based on our observation that data lifetimes can be reliably predicted using
@@ -83,5 +63,25 @@ while no code modification is necessary.
 \input{pcstream}
 \input{experiment}
 \input{conclusion}
+
+\vspace{-14pt}
+\section*{Acknowledgments}
+\vspace{-7pt}
+
+This work was supported by the National Research Foundation of Korea (NRF) 
+grant funded by the Korea government (Ministry
+of Science and ICT) 
+(NRF-2015M3C4A7065645 and NRF-2018R1A2B6006878).
+The ICT at Seoul National University
+provided research facilities for this study. 
+Sungjin Lee was supported by
+the NRF grant funded by the Korea government 
+(Ministry of Science and ICT) 
+(NRF-2017R1E1A1A01077410) and 
+the DGIST R\&D Program of the Ministry of 
+Science and ICT (18-EE-01).
+(Corresponding Author: Jihong Kim)
 \input{reference}
+
+
 \end{document}

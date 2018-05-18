@@ -1,7 +1,7 @@
-\vspace{-10pt}
+\vspace{-12pt}
 \section{Introduction}
 \label{sec:intro}
-\vspace{-3pt}
+\vspace{-9pt}
 Multi-streamed SSDs provide a special mechanism,
 called streams, for a host system to prevent data with different lifetimes 
 from being mixed into the same block~\cite{T10, MultiStream}.
@@ -19,14 +19,14 @@ should be allocated
 to the same stream, so that the copy cost of GC can be minimized.
 However, since it is difficult to know the future update times {\it a priori} when they are written,
 stream allocation decisions are often {\it manually} made 
-by programmers based on their expertise (or experience) 
+by programmers based on their expertise
 on the application~\cite{MultiStream, Level} or the file system~\cite{FStream}.  
-Furthermore, these manual techniques assume 
-that the number of streams in an SSD is not changing, 
-thus requiring manual modifications whenever the number of streams in the SSD changes.
+%Furthermore, these manual techniques assume 
+%that the number of streams in an SSD is not changing, 
+%thus requiring manual modifications whenever the number of streams in the SSD changes.
 In this paper, our goal is to develop 
 %a {\it fully automatic} technique for managing streams which is applicable for {\it any} multi-streamed SSD.
-a {\it fully automatic} stream management technique which is applicable for {\it any} multi-streamed SSD. %shane part
+a {\it fully automatic} stream management technique. %which is applicable for multi-streamed SSD. %shane part
 
 To the best of our knowledge, \textsf{\small AutoStream}~\cite{AutoStream} is the only automatic 
 stream management technique
@@ -48,10 +48,9 @@ for multi-streamed SSDs based on program contexts (PCs).
 Since the key motivation behind \textsf{\small PCStream} was 
 that data lifetimes should be estimated at a higher abstraction level than LBAs, 
 \textsf{\small PCStream} employed a write program context\footnote{Since we are interested in write-related 
-system calls such as write() and writev() in the Linux kernel, 
-we call their related program contexts as 
-{\it write program contexts.} In the rest of the paper, we use 
-{\it program contexts} interchangeably with {\it write program contexts}.}  
+system call such as write() in the Linux kernel, 
+we call the related program context as 
+{\it write program contexts} or simply {\it program contexts} in this paper.}  
 as a stream management unit.
 A program context~\cite{PC, PC2}, which represents a particular execution phase of a program, 
 is known to be an effective hint in separating data with different lifetimes~\cite{PCHa}.  
@@ -76,9 +75,9 @@ In order to evaluate the effectiveness of \textsf{\small PCStream},
 we have implemented \textsf{\small PCStream}
 in the Linux kernel (ver. 4.5) and measured write amplification factor (WAF) values 
 using RocksDB on a Samsung PM963 SSD 
-as well as an SSD emulator.
+and an SSD emulator.
 Our experimental results show that \textsf{\small PCStream}
-can reduce the GC overhead as much as a highly-optimized 
+can reduce the GC overhead as much as a %highly-optimized 
 manual stream management technique while requiring no code modification.  
 Furthermore, \textsf{\small PCStream} outperformed \textsf{\small AutoStream} by reducing the average WAF by 35\%.
 

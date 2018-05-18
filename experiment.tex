@@ -1,6 +1,6 @@
-\vspace{-10pt}
+\vspace{-14pt}
 \section{Experimental Results}
-\vspace{-5pt}
+\vspace{-9pt}
 
 \begin{figure*}[t]
 	\centering
@@ -12,7 +12,7 @@
 %	\vspace{-10pt}
 %	\caption{The WAF comparison on the emulator.}
 	\label{fig:exp}
-	\vspace{-35pt}
+	\vspace{-36pt}
 \end{figure*}
 
 For our experiments, we have implemented \textsf{\small PCStream} in the Linux kernel
@@ -22,7 +22,7 @@ existing schemes: \textsf{\small Baseline}, \textsf{\small Manual}~\cite{MultiSt
 SSD that does not support a multi-stream feature. \textsf{\small Manual} is a RocksDB
 implementation which is manually optimized for multi-streamed SSDs.
 \textsf{\small AutoStream} is an LBA-based data separation technique which is
-implemented at the block driver layer. To understand the impact of the
+implemented at the device driver layer. To understand the impact of the
 two-phase assignment, in addition, we compared \textsf{\small PCStream} with
 \textsf{\small PCStream$^{*}$} which excluded the two-phase assignment feature.
 
@@ -34,9 +34,9 @@ read-modify-writes in the SSD.  \texttt{AR} is similar to \texttt{UR}, except
 that it performs the update of values for growing keys. \texttt{FR} writes
 key-value pairs to the SSD in a random key order.
 
-\vspace{-10pt}
+\vspace{-16pt}
 \subsection{Experiments with an SSD emulator}
-\vspace{-2pt}
+\vspace{-4pt}
 
 \begin{comment}
 \begin{figure}[t]
@@ -133,9 +133,9 @@ Streams 3 and 4 of \textsf{\small PCStream$^{*}$},
 which have large variances in lifetimes, are split into two substreams 5 and 6 in \textsf{\small PCStream}.
 This split reduces variances of streams 3 and 4, thus reducing the GC copy cost.  %improving WAF. 
 
-\vspace{-8pt}
+\vspace{-16pt}
 \subsection{Experiments with a real-world SSD}
-\vspace{-2pt}
+\vspace{-4pt}
 
 In order to evaluate the effect of \textsf{\small PCStream} in a real SSD,  
 %In order to confirm the feasibility of \textsf{\small PCStream}, 
